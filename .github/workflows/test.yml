@@ -28,26 +28,14 @@ jobs:
       - name: Run Forge fmt
         run: forge fmt --check
 
-      - name: Run Forge build (M4: --sizes fails if any contract exceeds the 24576-byte limit)
+      - name: Run Forge build (--sizes fails if any contract exceeds the 24576-byte limit)
         run: forge build --sizes
 
-      - name: Storage-layout drift check (M3: the clone impl layout must stay stable)
-        run: |
-          set -euo pipefail
-          # Normalize: strip AST-node ids + array lengths from `type` (they shift on any code edit and are
-          # already captured by slot/offset), keeping the real layout invariant (label/slot/offset + the
-          # primitive type widths). A genuine storage move/resize still trips this; a logic edit does not.
-          FILTER='[.storage[] | {label, slot, offset, type: (.type | gsub("[0-9]+_storage"; "_storage"))}]'
-          for c in SessionAuction AgentBond Treasury FlagRegistry; do
-            forge inspect "$c" storageLayout --json | jq -S "$FILTER" > "/tmp/$c.layout.json"
-            if ! diff -u "storage-layout/$c.json" "/tmp/$c.layout.json"; then
-              echo "::error::storage-layout drift in $c. If intentional, regenerate: forge inspect $c storageLayout --json | jq -S '$FILTER' > storage-layout/$c.json"
-              exit 1
-            fi
-          done
+      - name: Storage-layout drift check (the clone implementation layout must stay stable)
+        run: make storage-check
 
       - name: Run Forge tests
         run: forge test -vvv
 
-      - name: Gas-snapshot check (n13: gas-regression gate, pinned fuzz seed for determinism)
+      - name: Gas-snapshot check (gas-regression gate, pinned fuzz seed for determinism)
         run: forge snapshot --check --fuzz-seed 1

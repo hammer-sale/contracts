@@ -270,15 +270,21 @@
     "type": "t_mapping(t_uint256,t_uint256)"
   },
   {
-    "label": "_pendingWithdrawals",
+    "label": "_bidCapable",
     "offset": 0,
     "slot": "34",
+    "type": "t_mapping(t_uint256,t_mapping(t_address,t_bool))"
+  },
+  {
+    "label": "_pendingWithdrawals",
+    "offset": 0,
+    "slot": "35",
     "type": "t_mapping(t_address,t_uint256)"
   },
   {
     "label": "_envelopeCancelled",
     "offset": 0,
-    "slot": "35",
+    "slot": "36",
     "type": "t_mapping(t_address,t_mapping(t_uint192,t_bool))"
   }
 ]

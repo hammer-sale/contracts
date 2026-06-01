@@ -10,6 +10,13 @@ RPC ?= http://127.0.0.1:8545
 DEV_PK ?= 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
 DEV_ADDR ?= 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266
 
+# Contracts whose storage layout is frozen and drift-checked. SessionAuction is the EIP-1167 clone
+# implementation (its layout must stay stable); the rest are deployed-once singletons.
+STORAGE_CONTRACTS := SessionAuction AgentBond Treasury FlagRegistry
+# Normalize `type`: strip the AST-node ids / array lengths that shift on any code edit but do not change
+# the real layout, so a genuine slot/offset move trips the check while an ordinary logic edit does not.
+STORAGE_FILTER := [.storage[] | {label, slot, offset, type: (.type | gsub("[0-9]+_storage"; "_storage"))}]
+
 .DEFAULT_GOAL := help
 
 ## ---- build / test ----------------------------------------------------------
@@ -37,6 +44,24 @@ fmt-check: ## Check formatting (CI)
 
 clean: ## Remove build artifacts
 	forge clean
+
+## ---- storage layout --------------------------------------------------------
+
+storage: ## Regenerate the committed storage-layout baselines (storage-layout/<C>.json)
+	@for c in $(STORAGE_CONTRACTS); do \
+		forge inspect "$$c" storageLayout --json | jq -S '$(STORAGE_FILTER)' > "storage-layout/$$c.json"; \
+		echo "  regenerated storage-layout/$$c.json"; \
+	done
+
+storage-check: ## Verify storage layout matches the committed baselines; fails on drift (CI)
+	@set -e; for c in $(STORAGE_CONTRACTS); do \
+		forge inspect "$$c" storageLayout --json | jq -S '$(STORAGE_FILTER)' > "/tmp/$$c.layout.json"; \
+		if ! diff -u "storage-layout/$$c.json" "/tmp/$$c.layout.json"; then \
+			echo "storage-layout drift in $$c; if intentional, run: make storage"; \
+			exit 1; \
+		fi; \
+	done
+	@echo "storage layout matches the committed baselines"
 
 ## ---- local chain -----------------------------------------------------------
 
@@ -86,4 +111,4 @@ block: ## Latest block summary
 help: ## List targets
 	@grep -hE '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-14s\033[0m %s\n", $$1, $$2}'
 
-.PHONY: build test test-gas snapshot coverage fmt fmt-check clean anvil anvil-trace anvil-fork fund-eth deploy-usdc mint-usdc balance receipt trace logs tx block help
+.PHONY: build test test-gas snapshot coverage fmt fmt-check clean storage storage-check anvil anvil-trace anvil-fork fund-eth deploy-usdc mint-usdc balance receipt trace logs tx block help
