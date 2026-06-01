@@ -1,0 +1,74 @@
+[
+  {
+    "label": "_owner",
+    "offset": 0,
+    "slot": "0",
+    "type": "t_address"
+  },
+  {
+    "label": "treasury",
+    "offset": 0,
+    "slot": "1",
+    "type": "t_address"
+  },
+  {
+    "label": "factory",
+    "offset": 0,
+    "slot": "2",
+    "type": "t_address"
+  },
+  {
+    "label": "_isClone",
+    "offset": 0,
+    "slot": "3",
+    "type": "t_mapping(t_address,t_bool)"
+  },
+  {
+    "label": "_pools",
+    "offset": 0,
+    "slot": "4",
+    "type": "t_mapping(t_bytes32,t_struct(Pool)_storage)"
+  },
+  {
+    "label": "_stakeOf",
+    "offset": 0,
+    "slot": "5",
+    "type": "t_mapping(t_bytes32,t_mapping(t_address,t_uint256))"
+  },
+  {
+    "label": "_harmOf",
+    "offset": 0,
+    "slot": "6",
+    "type": "t_mapping(t_bytes32,t_mapping(t_address,t_uint128))"
+  },
+  {
+    "label": "sessionClosed",
+    "offset": 0,
+    "slot": "7",
+    "type": "t_mapping(t_bytes32,t_bool)"
+  },
+  {
+    "label": "claimedFromPot",
+    "offset": 0,
+    "slot": "8",
+    "type": "t_mapping(t_bytes32,t_uint256)"
+  },
+  {
+    "label": "sessionToken",
+    "offset": 0,
+    "slot": "9",
+    "type": "t_mapping(t_bytes32,t_address)"
+  },
+  {
+    "label": "_bondTokenSet",
+    "offset": 0,
+    "slot": "10",
+    "type": "t_mapping(t_bytes32,t_bool)"
+  },
+  {
+    "label": "pendingWithdrawals",
+    "offset": 0,
+    "slot": "11",
+    "type": "t_mapping(t_address,t_mapping(t_address,t_uint256))"
+  }
+]

@@ -1,0 +1,63 @@
+# Verified against https://getfoundry.sh/config/reference/ and `forge config` output for forge 1.7.1.
+# Do not add keys without consulting the docs first; defaults are documented at:
+#   https://getfoundry.sh/config/reference/project
+#   https://getfoundry.sh/config/reference/solidity-compiler
+#   https://getfoundry.sh/config/reference/testing
+
+[profile.default]
+src    = "src"
+test   = "test"
+script = "script"
+out    = "out"
+libs   = ["lib"]
+
+# Solidity compiler
+# - solc_version pinned for reproducible bytecode (override Foundry's auto-detect).
+# - evm_version = "cancun" is the safe intersection of Arbitrum One (ArbOS 20+ Atlas) and
+#   Arbitrum Sepolia (ArbOS 60+ Elara, active since 2026-05-18). Gives PUSH0 and TLOAD/TSTORE.
+#   Revisit when Arbitrum One announces an ArbOS 60+ activation date.
+solc_version     = "0.8.28"
+auto_detect_solc = false
+evm_version      = "cancun"
+optimizer        = true
+optimizer_runs   = 200
+via_ir           = true
+
+# Reproducible artifacts: drop the IPFS metadata hash that otherwise embeds in bytecode.
+bytecode_hash = "none"
+cbor_metadata = false
+
+# Useful extra artifact for upgrade-safety tooling and storage-slot inspection.
+extra_output = ["storageLayout"]
+
+# Test sandbox: read-only access to the project root for fixtures and snapshots.
+fs_permissions = [{ access = "read", path = "./" }]
+
+[profile.default.fuzz]
+runs             = 256
+max_test_rejects = 65536
+
+[profile.default.invariant]
+runs           = 256
+depth          = 500
+fail_on_revert = false
+
+# CI profile: heavier fuzzing for pre-merge / scheduled runs. Activate with FOUNDRY_PROFILE=ci.
+[profile.ci.fuzz]
+runs = 5000
+
+[profile.ci.invariant]
+runs  = 1000
+depth = 1000
+
+# RPC endpoints, interpolated from environment at run time.
+# Usage: forge script ... --rpc-url arbitrum_sepolia
+[rpc_endpoints]
+arbitrum_sepolia = "${ARB_SEPOLIA_RPC}"
+arbitrum_one     = "${ARB_ONE_RPC}"
+
+# Etherscan V2 unified API: single ETHERSCAN_API_KEY works across all Etherscan-family explorers
+# (Arbiscan, Etherscan, BscScan, ...). See https://getfoundry.sh/config/reference/etherscan.
+[etherscan]
+arbitrum_sepolia = { key = "${ETHERSCAN_API_KEY}" }
+arbitrum_one     = { key = "${ETHERSCAN_API_KEY}" }
