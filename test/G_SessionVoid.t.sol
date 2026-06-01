@@ -1185,13 +1185,13 @@ contract SessionVoidTest is HammerBase {
         assertEq(
             winner.balance - buyerBefore,
             uint256(WIN_BID) + uint256(DISPUTE_BOND_AMT),
-            "G-03: _refund did not pay buyer escrow + bond"
+            "_refund did not pay buyer escrow + bond"
         );
 
         Lot memory pre = auction.getLot(LOT);
-        assertEq(uint256(pre.escrowAmount), 0, "G-03: _refund did not zero escrow (precondition)");
-        assertEq(uint256(pre.disputeBond), 0, "G-03: resolveDispute did not zero the bond (precondition)");
-        assertEq(pre.phase, uint8(LotPhase.Refunded), "G-03: lot not Refunded after _refund (precondition)");
+        assertEq(uint256(pre.escrowAmount), 0, "_refund did not zero escrow (precondition)");
+        assertEq(uint256(pre.disputeBond), 0, "resolveDispute did not zero the bond (precondition)");
+        assertEq(pre.phase, uint8(LotPhase.Refunded), "lot not Refunded after _refund (precondition)");
         uint8 phaseBefore = pre.phase;
         uint8 dsBefore = pre.deliveryState;
 
@@ -1207,12 +1207,12 @@ contract SessionVoidTest is HammerBase {
         emit ISessionAuction.DepositWithdrawn(LOT, winner, WIN_SLACK);
         vm.prank(winner);
         auction.withdrawRefund(LOT);
-        assertEq(winner.balance - balBefore, WIN_SLACK, "G-03: post-refund void pull paid != residual slack");
+        assertEq(winner.balance - balBefore, WIN_SLACK, "post-refund void pull paid != residual slack");
 
         Lot memory post = auction.getLot(LOT);
-        assertEq(uint256(post.escrowAmount), 0, "G-03: escrow changed by no-op step 2 on Refunded terminal");
-        assertEq(post.phase, phaseBefore, "G-03: Refunded terminal phase re-driven by no-op step 2");
-        assertEq(post.deliveryState, dsBefore, "G-03: Refunded terminal deliveryState re-driven by no-op step 2");
+        assertEq(uint256(post.escrowAmount), 0, "escrow changed by no-op step 2 on Refunded terminal");
+        assertEq(post.phase, phaseBefore, "Refunded terminal phase re-driven by no-op step 2");
+        assertEq(post.deliveryState, dsBefore, "Refunded terminal deliveryState re-driven by no-op step 2");
 
         // A second pull now has nothing -> NothingToWithdraw (no double-pay, no spurious Refunded).
         vm.prank(winner);
@@ -1496,19 +1496,19 @@ contract SessionVoidTest is HammerBase {
         vm.prank(who);
         auction.withdrawRefund(lotId);
 
-        assertEq(who.balance - balBefore, expected, "FUND-3b: winner delta != free + escrow");
+        assertEq(who.balance - balBefore, expected, "winner delta != free + escrow");
 
         // Held side drops by exactly free+escrow on the winner pull.
         assertEq(
             heldBefore - address(auction).balance,
             expected,
-            "FUND-3b: clone-held delta != free+escrow on winner pull (leak/strand)"
+            "clone-held delta != free+escrow on winner pull (leak/strand)"
         );
 
         Lot memory l = auction.getLot(lotId);
-        assertEq(uint256(l.escrowAmount), 0, "FUND-3b: escrowAmount not zeroed");
-        assertEq(l.phase, uint8(LotPhase.Refunded), "FUND-3b: phase not Refunded");
-        assertEq(l.deliveryState, uint8(DeliveryState.Refunded), "FUND-3b: deliveryState not Refunded");
+        assertEq(uint256(l.escrowAmount), 0, "escrowAmount not zeroed");
+        assertEq(l.phase, uint8(LotPhase.Refunded), "phase not Refunded");
+        assertEq(l.deliveryState, uint8(DeliveryState.Refunded), "deliveryState not Refunded");
 
         // Second pull: deposit + escrow already zeroed -> NothingToWithdraw.
         vm.prank(who);
@@ -1764,7 +1764,7 @@ contract SessionVoidTest is HammerBase {
         // At hammer the offender's larger bid is locked into escrowAmount, so escrowAmount ==
         // OFFENDER_BID before the promote replaces it.
         assertEq(
-            uint256(auction.getLot(LOT).escrowAmount), uint256(OFFENDER_BID), "FUND-1: pre-void escrow != offender bid"
+            uint256(auction.getLot(LOT).escrowAmount), uint256(OFFENDER_BID), "pre-void escrow != offender bid"
         );
 
         // void the flagged offender and promote `winner` (re-locks winner's own WIN_BID into escrow).
@@ -1780,15 +1780,15 @@ contract SessionVoidTest is HammerBase {
         assertEq(
             uint256(auction.getLot(LOT).escrowAmount),
             uint256(WIN_BID),
-            "FUND-1: post-void escrow != promoted bid (offender escrow not captured/re-locked)"
+            "post-void escrow != promoted bid (offender escrow not captured/re-locked)"
         );
         // The offender is no longer highBidder; its committed was zeroed at hammer (escrow, then
         // forfeited), so only its deposit slack above OFFENDER_BID remains free.
-        assertEq(auction.getLot(LOT).highBidder, winner, "FUND-1: highBidder not the promoted winner");
+        assertEq(auction.getLot(LOT).highBidder, winner, "highBidder not the promoted winner");
         assertEq(
             auction.withdrawableFree(LOT, offender),
             WIN_DEPOSIT - uint256(OFFENDER_BID),
-            "FUND-1: offender free != deposit slack above its forfeited bid"
+            "offender free != deposit slack above its forfeited bid"
         );
     }
 
@@ -1817,7 +1817,7 @@ contract SessionVoidTest is HammerBase {
         assertEq(
             uint256(auction.getLot(LOT).escrowAmount),
             uint256(OFFENDER_BID),
-            "FUND-1: pre-void escrow != offender bid (still-Hammered fixture)"
+            "pre-void escrow != offender bid (still-Hammered fixture)"
         );
     }
 
@@ -2074,11 +2074,11 @@ contract SessionVoidTest is HammerBase {
         a.withdrawRefund(lotId);
 
         delta = _bal(a, payToken, who) - beforeWho;
-        assertEq(delta, owed, "G-05: party delta != owed");
+        assertEq(delta, owed, "party delta != owed");
 
         // Per-pull conservation: held falls by exactly what this party received. Overpaying one party and
         // underpaying another by the same total nets to held==0 overall but fails here.
-        assertEq(heldBefore - _held(a, payToken), delta, "G-05: clone-held delta != party delta on this pull");
+        assertEq(heldBefore - _held(a, payToken), delta, "clone-held delta != party delta on this pull");
     }
 
     /// @dev Assert the five-bucket fund-conservation identity on clone `a`:

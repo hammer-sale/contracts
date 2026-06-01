@@ -1084,7 +1084,7 @@ contract FundInvariantsHandler {
         address feeSink = feeRecipient();
         uint256 feeSinkPre = _claimable(feeSink);
 
-        // resolveDispute is onlyArbiter; prank the arbiter so the bond payout is observed by the J-03
+        // resolveDispute is onlyArbiter; prank the arbiter so the bond payout is observed by the
         // disputeBond zero-transition.
         vm.prank(arbiter());
         try auction.resolveDispute(lotId, res, keccak256("photo")) {
@@ -1270,7 +1270,7 @@ abstract contract FundInvariantsBase is HammerBase {
     FundInvariantsHandler internal handler;
     // Adversarial reentrant recipient: registered as a handler principal on both rails so any escrow/bond
     // push to it re-enters a withdraw/claim during the gas-capped native _pay. A reentrant double-pay
-    // would break J-01 and J-02 automatically; test_ReentrantWithdrawCannotDoublePay pins it explicitly.
+    // would break fund conservation and escrow single-exit; test_ReentrantWithdrawCannotDoublePay pins it.
     FundReentrantRecipient internal attacker;
 
     // Treasury / OperatorBond pool balances snapshotted at setUp so the three-pool separation check can
@@ -1610,7 +1610,7 @@ abstract contract FundInvariantsBase is HammerBase {
         }
     }
 
-    /// J-01 (invariant_FundConservation): the clone's payment-token balance equals the handler's own
+    /// (invariant_FundConservation): the clone's payment-token balance equals the handler's own
     /// cumulative accounting (funded-in minus paid-out) after every randomized call, on both rails. This
     /// identity needs neither the committed getter nor the integrity-bond getter the surface omits, so it
     /// is structurally complete and rail-agnostic. The getter-bucket sum is kept as a <= cross-check, and
@@ -1624,14 +1624,14 @@ abstract contract FundInvariantsBase is HammerBase {
         // Every unit the clone holds was funded in and not yet paid out: no path mints (cloneBal > fundedIn
         // - paidOut) and no path strands value outside accounting (cloneBal short). Stated additively to
         // avoid subtraction underflow, plus an explicit paidOut <= fundedIn mint check.
-        assertLe(paidOut, fundedIn, "J-01: paid out more than funded in (mint on a push path)");
-        assertEq(cloneBal + paidOut, fundedIn, "J-01: cloneBalance + paidOut != fundedIn");
+        assertLe(paidOut, fundedIn, "paid out more than funded in (mint on a push path)");
+        assertEq(cloneBal + paidOut, fundedIn, "cloneBalance + paidOut != fundedIn");
 
         // Getter cross-check, upper bound: the getter buckets cannot exceed the held balance (the unread
         // committed + integrity-bond buckets make up any remainder). A getter sum above the balance would
         // mean a bucket double-counts held funds.
         uint256 getterSum = _getterBucketSum();
-        assertLe(getterSum, cloneBal, "J-01: getter buckets exceed clone balance");
+        assertLe(getterSum, cloneBal, "getter buckets exceed clone balance");
 
         // Getter cross-check, lower bound: the only legitimately-unreadable held terms are committed + the
         // integrity bond, both tracked by intent, so getterSum plus those intents must be at least the clone
@@ -1642,7 +1642,7 @@ abstract contract FundInvariantsBase is HammerBase {
         assertGe(
             getterSum + handler.committedByIntent() + handler.integrityBondByIntent(),
             cloneBal,
-            "J-01: getter buckets + known-unreadable intent fall short of clone balance (strand / mis-rebalance)"
+            "getter buckets + known-unreadable intent fall short of clone balance (strand / mis-rebalance)"
         );
 
         // Three-pool separation, forfeit-aware. The one legal clone -> Treasury move (the depositForfeit
@@ -1670,37 +1670,37 @@ abstract contract FundInvariantsBase is HammerBase {
 
         // Sink pools never lose value in this flow (no bidder principal is sourced from a sink pool), on
         // both currencies.
-        assertGe(treasuryEth, treasuryBaselineEth, "J-01: Treasury eth fell below baseline (sink pool leaked out)");
+        assertGe(treasuryEth, treasuryBaselineEth, "Treasury eth fell below baseline (sink pool leaked out)");
         assertGe(
             operatorBondEth,
             operatorBondBaselineEth,
-            "J-01: OperatorBond eth fell below baseline (sink pool leaked out)"
+            "OperatorBond eth fell below baseline (sink pool leaked out)"
         );
-        assertGe(treasuryTok, treasuryBaselineToken, "J-01: Treasury token fell below baseline (sink pool leaked out)");
+        assertGe(treasuryTok, treasuryBaselineToken, "Treasury token fell below baseline (sink pool leaked out)");
         assertGe(
             operatorBondTok,
             operatorBondBaselineToken,
-            "J-01: OperatorBond token fell below baseline (sink pool leaked out)"
+            "OperatorBond token fell below baseline (sink pool leaked out)"
         );
 
         if (_nativeRail()) {
             // Payment currency is ETH: combined sink growth can never exceed the clone's counted outflow;
             // the non-payment currency (token) cannot move, so it is pinned to baseline exactly.
             uint256 sinkGrowthEth = (treasuryEth - treasuryBaselineEth) + (operatorBondEth - operatorBondBaselineEth);
-            assertLe(sinkGrowthEth, paidOut, "J-01: sink-pool eth growth exceeds clone outflow (funds created)");
-            assertEq(treasuryTok, treasuryBaselineToken, "J-01: Treasury token drift on the native rail");
-            assertEq(operatorBondTok, operatorBondBaselineToken, "J-01: OperatorBond token drift on the native rail");
+            assertLe(sinkGrowthEth, paidOut, "sink-pool eth growth exceeds clone outflow (funds created)");
+            assertEq(treasuryTok, treasuryBaselineToken, "Treasury token drift on the native rail");
+            assertEq(operatorBondTok, operatorBondBaselineToken, "OperatorBond token drift on the native rail");
         } else {
             // Payment currency is the token: bound its sink growth by paidOut; pin ETH to baseline exactly.
             uint256 sinkGrowthTok =
                 (treasuryTok - treasuryBaselineToken) + (operatorBondTok - operatorBondBaselineToken);
-            assertLe(sinkGrowthTok, paidOut, "J-01: sink-pool token growth exceeds clone outflow (funds created)");
-            assertEq(treasuryEth, treasuryBaselineEth, "J-01: Treasury eth drift on the ERC-20 rail");
-            assertEq(operatorBondEth, operatorBondBaselineEth, "J-01: OperatorBond eth drift on the ERC-20 rail");
+            assertLe(sinkGrowthTok, paidOut, "sink-pool token growth exceeds clone outflow (funds created)");
+            assertEq(treasuryEth, treasuryBaselineEth, "Treasury eth drift on the ERC-20 rail");
+            assertEq(operatorBondEth, operatorBondBaselineEth, "OperatorBond eth drift on the ERC-20 rail");
         }
     }
 
-    /// J-02 (invariant_EscrowSingleExit): for every lot, lot.escrowAmount goes nonzero -> zero at most
+    /// (invariant_EscrowSingleExit): for every lot, lot.escrowAmount goes nonzero -> zero at most
     /// once and is never resurrected (nonzero again after a zeroing). Equivalently: the winner escrow is
     /// written once (hammer/promote) and zeroed by exactly one exit (_release / _refund / withdrawRefund
     /// step 2), then stays zero.
@@ -1708,15 +1708,15 @@ abstract contract FundInvariantsBase is HammerBase {
         uint256 nLots = handler.touchedLotsLength();
         for (uint256 i = 0; i < nLots; i++) {
             uint256 lotId = handler.touchedLotAt(i);
-            assertLe(handler.escrowZeroings(lotId), 1, "J-02: escrow zeroed more than once (double-pay)");
-            assertFalse(handler.escrowResurrected(lotId), "J-02: escrow re-set nonzero after a zeroing");
+            assertLe(handler.escrowZeroings(lotId), 1, "escrow zeroed more than once (double-pay)");
+            assertFalse(handler.escrowResurrected(lotId), "escrow re-set nonzero after a zeroing");
 
             // Set-once: escrowAmount is written exactly once, so it must never be overwritten from one
             // nonzero value to a different nonzero value without first being zeroed. The one legal exception
             // is the promote-time re-snapshot at voidAndAward (Hammered -> Voided), tracked and bounded
             // below; every other nonzero->nonzero overwrite trips this.
             assertFalse(
-                handler.escrowMutatedWhileNonzero(lotId), "J-02: escrowAmount overwritten nonzero->nonzero (set-once)"
+                handler.escrowMutatedWhileNonzero(lotId), "escrowAmount overwritten nonzero->nonzero (set-once)"
             );
 
             // Legal-promote bound: the single escrowAmount re-snapshot at voidAndAward (offender E1 ->
@@ -1724,12 +1724,12 @@ abstract contract FundInvariantsBase is HammerBase {
             // promote re-snapshot trips this, so set-once is enforced on the promote path too. Under the
             // frozen fixture no bid lands, so this stays 0.
             assertLe(
-                handler.escrowResnapshots(lotId), 1, "J-02: escrowAmount re-snapshotted more than once at promote"
+                handler.escrowResnapshots(lotId), 1, "escrowAmount re-snapshotted more than once at promote"
             );
         }
     }
 
-    /// J-03 (invariant_DisputeBondPoolIsolation): the delivery dispute-bond pool (lot.disputeBond) is a
+    /// (invariant_DisputeBondPoolIsolation): the delivery dispute-bond pool (lot.disputeBond) is a
     /// closed, conserved pool disjoint from the bid escrow. Inflow is tracked from the openDispute pull
     /// intent (not inferred from disputeBond deltas, which can both miss and double-count); outflow is the
     /// observed disputeBond zero-transition. Total bond pulled in equals total paid out plus bond still
@@ -1749,13 +1749,13 @@ abstract contract FundInvariantsBase is HammerBase {
         assertEq(
             handler.bondPulledIn(),
             handler.bondPaidOut() + bondStillHeld,
-            "J-03: dispute-bond pool not conserved (bond in != out + held)"
+            "dispute-bond pool not conserved (bond in != out + held)"
         );
 
         // Disjointness: the bond still held can never exceed what was funded in (escrow never funds a
         // bond), and the bond pool sum can never exceed the whole clone balance.
-        assertLe(bondStillHeld, handler.bondPulledIn(), "J-03: bond held exceeds bond funded (escrow leaked in)");
-        assertLe(bondStillHeld, _railCloneBalance(), "J-03: bond held exceeds clone balance");
+        assertLe(bondStillHeld, handler.bondPulledIn(), "bond held exceeds bond funded (escrow leaked in)");
+        assertLe(bondStillHeld, _railCloneBalance(), "bond held exceeds clone balance");
 
         // Recipient correctness: conservation is blind to a bond paid to the wrong party. On every
         // resolveDispute that paid the bond out, the handler asserted the rule-correct party (seller under
@@ -1764,7 +1764,7 @@ abstract contract FundInvariantsBase is HammerBase {
         for (uint256 i = 0; i < nLots; i++) {
             uint256 lotId = handler.touchedLotAt(i);
             assertFalse(
-                handler.bondToWrongParty(lotId), "J-03: dispute bond credited the wrong party (not the winning party)"
+                handler.bondToWrongParty(lotId), "dispute bond credited the wrong party (not the winning party)"
             );
 
             // Exact recipient: the winner's gain must equal escrow-leg + bond exactly and the fee sink must
@@ -1773,7 +1773,7 @@ abstract contract FundInvariantsBase is HammerBase {
             // where the >= bond check and the loser-unchanged check pass.
             assertFalse(
                 handler.bondNotExactToWinner(lotId),
-                "J-03: dispute bond not paid in full to the winner (split / redirected to a third party)"
+                "dispute bond not paid in full to the winner (split / redirected to a third party)"
             );
         }
     }
@@ -1939,11 +1939,11 @@ abstract contract FundInvariantsBase is HammerBase {
                 classBOpensSum += handler.classBOpens(lotId);
                 classBClosesSum += handler.classBCloses(lotId);
             }
-            // J-02 saw a real escrow exit (an escrowAmount nonzero -> zero transition actually happened).
-            assertGt(escrowZeroingsSum, 0, "liveness: J-02 vacuous (no escrow exit ever fired)");
-            // J-03 moved a bond (a bond was pulled in or paid out at least once).
+            // saw a real escrow exit (an escrowAmount nonzero -> zero transition actually happened).
+            assertGt(escrowZeroingsSum, 0, "liveness: vacuous (no escrow exit ever fired)");
+            // moved a bond (a bond was pulled in or paid out at least once).
             assertGt(
-                handler.bondPulledIn() + handler.bondPaidOut(), 0, "liveness: J-03 vacuous (no dispute bond ever moved)"
+                handler.bondPulledIn() + handler.bondPaidOut(), 0, "liveness: vacuous (no dispute bond ever moved)"
             );
             // Item 5 opened AND closed the Class B gate at least once (the gate transition under test).
             assertGt(classBOpensSum, 0, "liveness: item5 vacuous (Class B gate never opened)");
@@ -1951,7 +1951,7 @@ abstract contract FundInvariantsBase is HammerBase {
         }
     }
 
-    // J-02 companions: every escrow-paying entrypoint fails closed from an illegal pre-state. On a fresh
+    // companions: every escrow-paying entrypoint fails closed from an illegal pre-state. On a fresh
     // lot (phase None, deliveryState None, not session-voided) each escrow-paying call reverts on its first
     // guard with a specific selector, never reaching a _pay, so escrow cannot leave from any state but the
     // one legal terminal edge. The NoEscrow double-pay after a real exit (escrowAmount already zeroed) needs
@@ -1998,7 +1998,7 @@ abstract contract FundInvariantsBase is HammerBase {
         auction.withdrawRefund(0);
     }
 
-    // J-03 companion: dispute-bond inflow fails closed. The pool's sole inflow (the openDispute bond pull)
+    // companion: dispute-bond inflow fails closed. The pool's sole inflow (the openDispute bond pull)
     // fails closed from an illegal pre-state: no bond can be pulled into lot.disputeBond from a lot not
     // legitimately disputable by this caller, so the closed pool is never seeded from a state the resolver
     // cannot later pay out. These pin the openDispute pre-pull guards (caller-identity first, then state)
@@ -2029,7 +2029,7 @@ abstract contract FundInvariantsBase is HammerBase {
         auction.openDispute{value: DISPUTE_BOND_AMT}(0, keccak256("claim"));
     }
 
-    /// J-02 companion: delivery-pipeline entry fails closed. markDelivered is the entry to the release
+    /// companion: delivery-pipeline entry fails closed. markDelivered is the entry to the release
     /// pipeline (the only edge from AwaitingDelivery to Delivered, the precondition for confirmReceipt /
     /// releaseAfterWindow / openDispute-on-Delivered). It is onlySeller (msg.sender == lot.seller). On a
     /// fresh lot seller is address(0), so a non-seller caller reverts Unauthorized and cannot drive the
@@ -2231,7 +2231,7 @@ abstract contract FundInvariantsBase is HammerBase {
         );
     }
 
-    /// J-04 (test_StorageLayoutBaseline): the canonical packed Lot layout and the bid-path / integrity /
+    /// (test_StorageLayoutBaseline): the canonical packed Lot layout and the bid-path / integrity /
     /// operator record types exist at their documented widths. The authoritative CI gate is
     /// `forge inspect SessionAuction storageLayout` against a committed baseline; this test pins the same
     /// surface structurally so a field widened/narrowed/reordered changes the decoded struct and trips an
@@ -2240,41 +2240,41 @@ abstract contract FundInvariantsBase is HammerBase {
     function test_StorageLayoutBaseline() public view {
         // Hot slot 0 + slot 1 + the cold slots, decoded to the canonical default widths.
         Lot memory lot = auction.getLot(0);
-        assertEq(uint256(lot.highBid), 0, "J-04: highBid slot");
-        assertEq(uint256(lot.endsAt), 0, "J-04: endsAt slot");
-        assertEq(uint256(lot.paddleId), 0, "J-04: paddleId slot");
-        assertEq(uint256(lot.sealedExtensions), 0, "J-04: sealedExtensions slot");
-        assertEq(uint256(lot.phase), uint256(uint8(LotPhase.None)), "J-04: phase slot (hot slot 0)");
+        assertEq(uint256(lot.highBid), 0, "highBid slot");
+        assertEq(uint256(lot.endsAt), 0, "endsAt slot");
+        assertEq(uint256(lot.paddleId), 0, "paddleId slot");
+        assertEq(uint256(lot.sealedExtensions), 0, "sealedExtensions slot");
+        assertEq(uint256(lot.phase), uint256(uint8(LotPhase.None)), "phase slot (hot slot 0)");
         assertEq(
-            uint256(lot.deliveryState), uint256(uint8(DeliveryState.None)), "J-04: deliveryState slot (hot slot 0)"
+            uint256(lot.deliveryState), uint256(uint8(DeliveryState.None)), "deliveryState slot (hot slot 0)"
         );
-        assertEq(lot.highBidder, address(0), "J-04: highBidder slot 1");
-        assertEq(uint256(lot.hammeredAt), 0, "J-04: hammeredAt slot 1");
-        assertEq(uint256(lot.voidedAt), 0, "J-04: voidedAt slot 1");
-        assertEq(lot.revealed, false, "J-04: revealed slot 1 flag");
-        assertEq(uint256(lot.bidIntegrityOpen), 0, "J-04: bidIntegrityOpen slot 1 counter");
-        assertEq(lot.seller, address(0), "J-04: seller slot 2");
-        assertEq(uint256(lot.awaitingAt), 0, "J-04: awaitingAt slot 2");
-        assertEq(uint256(lot.deliveredAt), 0, "J-04: deliveredAt slot 2");
-        assertEq(uint256(lot.reservePrice), 0, "J-04: reservePrice slot 3");
-        assertEq(uint256(lot.escrowAmount), 0, "J-04: escrowAmount slot 3");
+        assertEq(lot.highBidder, address(0), "highBidder slot 1");
+        assertEq(uint256(lot.hammeredAt), 0, "hammeredAt slot 1");
+        assertEq(uint256(lot.voidedAt), 0, "voidedAt slot 1");
+        assertEq(lot.revealed, false, "revealed slot 1 flag");
+        assertEq(uint256(lot.bidIntegrityOpen), 0, "bidIntegrityOpen slot 1 counter");
+        assertEq(lot.seller, address(0), "seller slot 2");
+        assertEq(uint256(lot.awaitingAt), 0, "awaitingAt slot 2");
+        assertEq(uint256(lot.deliveredAt), 0, "deliveredAt slot 2");
+        assertEq(uint256(lot.reservePrice), 0, "reservePrice slot 3");
+        assertEq(uint256(lot.escrowAmount), 0, "escrowAmount slot 3");
         // winnerSeq's fresh-slot-4 placement is pinned at its zero state here; a nonzero round-trip requires
         // a hammered winner (a successful placeBid), which the frozen non-P256 fixture cannot produce through
         // this harness, so the nonzero exercise is deferred to the forge-inspect storage baseline and the
         // green lifecycle tests.
-        assertEq(uint256(lot.winnerSeq), 0, "J-04: winnerSeq fresh slot 4 (CORR-1)");
-        assertEq(lot.bidBookRoot, bytes32(0), "J-04: bidBookRoot slot 5");
-        assertEq(lot.deliveryProofHash, bytes32(0), "J-04: deliveryProofHash slot 6");
-        assertEq(lot.disputeOpener, address(0), "J-04: disputeOpener slot 7");
-        assertEq(uint256(lot.disputeBond), 0, "J-04: disputeBond slot 7");
-        assertEq(lot.disputeRef, bytes32(0), "J-04: disputeRef slot 8");
+        assertEq(uint256(lot.winnerSeq), 0, "winnerSeq fresh slot 4");
+        assertEq(lot.bidBookRoot, bytes32(0), "bidBookRoot slot 5");
+        assertEq(lot.deliveryProofHash, bytes32(0), "deliveryProofHash slot 6");
+        assertEq(lot.disputeOpener, address(0), "disputeOpener slot 7");
+        assertEq(uint256(lot.disputeBond), 0, "disputeBond slot 7");
+        assertEq(lot.disputeRef, bytes32(0), "disputeRef slot 8");
 
         // The Deposit and IntegrityDispute records (the _deposit and _integrityDispute storage types)
         // decode at their documented widths. Constructed in-memory to pin the struct shape the storage
         // mappings use; a width drift would fail to compile or mis-decode.
         Deposit memory d = Deposit({free: type(uint128).max, committed: type(uint128).max});
-        assertEq(uint256(d.free), uint256(type(uint128).max), "J-04: Deposit.free width");
-        assertEq(uint256(d.committed), uint256(type(uint128).max), "J-04: Deposit.committed width");
+        assertEq(uint256(d.free), uint256(type(uint128).max), "Deposit.free width");
+        assertEq(uint256(d.committed), uint256(type(uint128).max), "Deposit.committed width");
 
         IntegrityDispute memory id = IntegrityDispute({
             challenger: address(this),
@@ -2283,15 +2283,15 @@ abstract contract FundInvariantsBase is HammerBase {
             open: true,
             class: 1
         });
-        assertEq(uint256(id.bond), uint256(type(uint96).max), "J-04: IntegrityDispute.bond width (u96)");
-        assertEq(uint256(id.openedAt), uint256(type(uint40).max), "J-04: IntegrityDispute.openedAt width (u40)");
-        assertEq(uint256(id.class), 1, "J-04: IntegrityDispute.class width (u8, Class B == 1)");
+        assertEq(uint256(id.bond), uint256(type(uint96).max), "IntegrityDispute.bond width (u96)");
+        assertEq(uint256(id.openedAt), uint256(type(uint40).max), "IntegrityDispute.openedAt width (u40)");
+        assertEq(uint256(id.class), 1, "IntegrityDispute.class width (u8, Class B == 1)");
 
         // The integrity gate view pins to the canonical zero state for a fresh lot (slot 1 counter 0).
-        assertEq(auction.bidIntegrityDisputeOpen(0), false, "J-04: bidIntegrityOpen counter starts at 0");
+        assertEq(auction.bidIntegrityDisputeOpen(0), false, "bidIntegrityOpen counter starts at 0");
     }
 
-    // Split J-04 region drivers: each drives a real entrypoint whose write touches a named storage region,
+    // Split region drivers: each drives a real entrypoint whose write touches a named storage region,
     // asserting a specific selector that is independent of pre-state.
 
     /// _operatorKeys / _operatorActive region: registerOperatorKey is onlyHammer. A non-hammer caller

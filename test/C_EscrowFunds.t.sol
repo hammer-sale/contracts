@@ -363,32 +363,32 @@ contract EscrowFundsTest is HammerBase {
         _placeBid(auctionT, bidder2, bidder2Key, 0, BID_B, BID_A, keccak256("qn-B"));
 
         // 1. No external transfer: the contract token balance is unchanged by the rebalance.
-        assertEq(token.balanceOf(address(auctionT)), balBefore, "C-01: contract balance moved");
+        assertEq(token.balanceOf(address(auctionT)), balBefore, "contract balance moved");
 
         // 2. A fully refunded to withdrawable: A.committed -> A.free, so A.free == CEILING_A.
         assertEq(
             auctionT.withdrawableFree(LOT_ID, bidder1),
             aFreeBefore + BID_A,
-            "C-01: A committed not released to free"
+            "A committed not released to free"
         );
-        assertEq(auctionT.withdrawableFree(LOT_ID, bidder1), CEILING_A, "C-01: A free != full deposit");
+        assertEq(auctionT.withdrawableFree(LOT_ID, bidder1), CEILING_A, "A free != full deposit");
 
         // 3. B debited free by BID_B; B holds the only nonzero committed, so free == deposit - highBid.
         assertEq(
             auctionT.withdrawableFree(LOT_ID, bidder2),
             bFreeBefore - BID_B,
-            "C-01: B free not debited by amount"
+            "B free not debited by amount"
         );
-        assertEq(auctionT.withdrawableFree(LOT_ID, bidder2), CEILING_B - BID_B, "C-01: B free != deposit - highBid");
+        assertEq(auctionT.withdrawableFree(LOT_ID, bidder2), CEILING_B - BID_B, "B free != deposit - highBid");
 
         // 4. Lot hot slot reflects B as the new top.
         Lot memory lot = auctionT.getLot(LOT_ID);
-        assertEq(lot.highBidder, bidder2, "C-01: highBidder not B");
-        assertEq(uint256(lot.highBid), BID_B, "C-01: highBid not B amount");
+        assertEq(lot.highBidder, bidder2, "highBidder not B");
+        assertEq(uint256(lot.highBid), BID_B, "highBid not B amount");
 
         // 5. Conservation: every bucket sums to the same total across the rebalance (pre-release).
-        assertEq(_erc20Buckets(auctionT, who), bucketsBefore, "C-01: bucket sum changed");
-        assertEq(_erc20Buckets(auctionT, who), balBefore, "C-01: buckets != contract balance");
+        assertEq(_erc20Buckets(auctionT, who), bucketsBefore, "bucket sum changed");
+        assertEq(_erc20Buckets(auctionT, who), balBefore, "buckets != contract balance");
     }
 
     // Commit-rebalance accounting on a genuinely native-denominated clone. The native pull
@@ -411,7 +411,7 @@ contract EscrowFundsTest is HammerBase {
         uint256 bucketsBefore = _nativeBuckets(a, who);
         uint256 aFreeBefore = a.withdrawableFree(LOT_ID, bidder1);
         uint256 bFreeBefore = a.withdrawableFree(LOT_ID, bidder2);
-        assertEq(bucketsBefore, balBefore, "C-01N: buckets != contract balance pre-outbid");
+        assertEq(bucketsBefore, balBefore, "buckets != contract balance pre-outbid");
 
         // B outbids: the released-from-prior-top amount is A's free after A's committed returns
         // (N_CEILING_A).
@@ -424,19 +424,19 @@ contract EscrowFundsTest is HammerBase {
         _placeBid(a, bidder2, bidder2Key, 0, nBidB, uint128(N_BID_A), keccak256("qn-BN"));
 
         // No native transfer on the rebalance; A fully released to free; B debited by amount.
-        assertEq(address(a).balance, balBefore, "C-01N: contract balance moved on rebalance");
-        assertEq(a.withdrawableFree(LOT_ID, bidder1), aFreeBefore + N_BID_A, "C-01N: A committed not released");
-        assertEq(a.withdrawableFree(LOT_ID, bidder1), N_CEILING_A, "C-01N: A free != full deposit");
-        assertEq(a.withdrawableFree(LOT_ID, bidder2), bFreeBefore - nBidB, "C-01N: B free not debited by amount");
-        assertEq(a.withdrawableFree(LOT_ID, bidder2), uint256(N_CEILING_A) - nBidB, "C-01N: B free != deposit - highBid");
+        assertEq(address(a).balance, balBefore, "contract balance moved on rebalance");
+        assertEq(a.withdrawableFree(LOT_ID, bidder1), aFreeBefore + N_BID_A, "A committed not released");
+        assertEq(a.withdrawableFree(LOT_ID, bidder1), N_CEILING_A, "A free != full deposit");
+        assertEq(a.withdrawableFree(LOT_ID, bidder2), bFreeBefore - nBidB, "B free not debited by amount");
+        assertEq(a.withdrawableFree(LOT_ID, bidder2), uint256(N_CEILING_A) - nBidB, "B free != deposit - highBid");
 
         Lot memory lot = a.getLot(LOT_ID);
-        assertEq(lot.highBidder, bidder2, "C-01N: highBidder not B");
-        assertEq(uint256(lot.highBid), nBidB, "C-01N: highBid not B amount");
+        assertEq(lot.highBidder, bidder2, "highBidder not B");
+        assertEq(uint256(lot.highBid), nBidB, "highBid not B amount");
 
         // Conservation across the native rebalance.
-        assertEq(_nativeBuckets(a, who), bucketsBefore, "C-01N: native bucket sum changed");
-        assertEq(_nativeBuckets(a, who), balBefore, "C-01N: native buckets != contract balance");
+        assertEq(_nativeBuckets(a, who), bucketsBefore, "native bucket sum changed");
+        assertEq(_nativeBuckets(a, who), balBefore, "native buckets != contract balance");
     }
 
     // Self-outbid, same-slot ordering hazard: the standing top raises its own bid, so newTop == prevTop
@@ -453,12 +453,12 @@ contract EscrowFundsTest is HammerBase {
 
         // Opening bid X (bidIndex 0): bidder1 becomes the top with committed == X, free == CEILING_A - X.
         _placeBid(auctionT, bidder1, bidder1Key, 0, BID_A, 0, keccak256("qn-self-A"));
-        assertEq(auctionT.withdrawableFree(LOT_ID, bidder1), CEILING_A - BID_A, "C-01s: free after opening bid");
-        assertEq(uint256(auctionT.getLot(LOT_ID).highBid), BID_A, "C-01s: highBid after opening bid");
+        assertEq(auctionT.withdrawableFree(LOT_ID, bidder1), CEILING_A - BID_A, "free after opening bid");
+        assertEq(uint256(auctionT.getLot(LOT_ID).highBid), BID_A, "highBid after opening bid");
 
         uint256 balBefore = token.balanceOf(address(auctionT));
         uint256 bucketsBefore = _erc20Buckets(auctionT, who);
-        assertEq(bucketsBefore, balBefore, "C-01s: buckets != balance pre self-raise");
+        assertEq(bucketsBefore, balBefore, "buckets != balance pre self-raise");
 
         // bidder1 self-raises to Y (bidIndex 1, observedPrevTop == own standing X). The released-from-
         // prior-top amount is bidder1's free after the self-release: CEILING_A - Y if correct, CEILING_A
@@ -478,22 +478,22 @@ contract EscrowFundsTest is HammerBase {
         assertEq(
             auctionT.withdrawableFree(LOT_ID, bidder1),
             expectedFreeAfter,
-            "C-01s: self-raise free != CEILING_A - Y (double-release or strand)"
+            "self-raise free != CEILING_A - Y (double-release or strand)"
         );
         uint256 committedSlice = uint256(CEILING_A) - auctionT.withdrawableFree(LOT_ID, bidder1);
-        assertEq(committedSlice, uint256(selfRaise), "C-01s: committed slice != Y");
+        assertEq(committedSlice, uint256(selfRaise), "committed slice != Y");
 
         Lot memory lot = auctionT.getLot(LOT_ID);
-        assertEq(lot.highBidder, bidder1, "C-01s: highBidder not bidder1 after self-raise");
-        assertEq(uint256(lot.highBid), selfRaise, "C-01s: highBid != Y");
-        assertEq(uint256(committedSlice), uint256(lot.highBid), "C-01s: committed slice != lot.highBid");
-        assertEq(uint256(lot.winnerSeq), 2, "C-01s: winnerSeq not the second bid seq");
+        assertEq(lot.highBidder, bidder1, "highBidder not bidder1 after self-raise");
+        assertEq(uint256(lot.highBid), selfRaise, "highBid != Y");
+        assertEq(uint256(committedSlice), uint256(lot.highBid), "committed slice != lot.highBid");
+        assertEq(uint256(lot.winnerSeq), 2, "winnerSeq not the second bid seq");
 
         // No external transfer on a self-raise, and full bucket conservation: the deposit never grew,
         // only the locked slice moved from X to Y inside the same slot.
-        assertEq(token.balanceOf(address(auctionT)), balBefore, "C-01s: contract balance moved on self-raise");
-        assertEq(_erc20Buckets(auctionT, who), bucketsBefore, "C-01s: bucket sum changed on self-raise");
-        assertEq(_erc20Buckets(auctionT, who), balBefore, "C-01s: buckets != balance after self-raise");
+        assertEq(token.balanceOf(address(auctionT)), balBefore, "contract balance moved on self-raise");
+        assertEq(_erc20Buckets(auctionT, who), bucketsBefore, "bucket sum changed on self-raise");
+        assertEq(_erc20Buckets(auctionT, who), balBefore, "buckets != balance after self-raise");
     }
 
     // Same-slot self-raise on a native-denominated clone, so a native-specific accounting regression in
@@ -508,11 +508,11 @@ contract EscrowFundsTest is HammerBase {
 
         // Opening bid X == N_BID_A.
         _placeBid(a, bidder1, bidder1Key, 0, N_BID_A, 0, keccak256("qn-selfN-A"));
-        assertEq(a.withdrawableFree(LOT_ID, bidder1), uint256(N_CEILING_A) - N_BID_A, "C-01sN: free after opening bid");
+        assertEq(a.withdrawableFree(LOT_ID, bidder1), uint256(N_CEILING_A) - N_BID_A, "free after opening bid");
 
         uint256 balBefore = address(a).balance;
         uint256 bucketsBefore = _nativeBuckets(a, who);
-        assertEq(bucketsBefore, balBefore, "C-01sN: buckets != balance pre self-raise");
+        assertEq(bucketsBefore, balBefore, "buckets != balance pre self-raise");
 
         // Self-raise to Y == 2*N_BID_A (bidIndex 1, observedPrevTop == own N_BID_A).
         uint128 selfRaise = uint128(uint256(N_BID_A) * 2);
@@ -525,18 +525,18 @@ contract EscrowFundsTest is HammerBase {
         emit ISessionAuction.BidEscrowCommitted(LOT_ID, bidder1, selfRaise, bidder1, uint128(expectedFreeAfter));
         _placeBid(a, bidder1, bidder1Key, 1, selfRaise, uint128(N_BID_A), keccak256("qn-selfN-B"));
 
-        assertEq(a.withdrawableFree(LOT_ID, bidder1), expectedFreeAfter, "C-01sN: self-raise free != N_CEILING_A - Y");
+        assertEq(a.withdrawableFree(LOT_ID, bidder1), expectedFreeAfter, "self-raise free != N_CEILING_A - Y");
         uint256 committedSlice = uint256(N_CEILING_A) - a.withdrawableFree(LOT_ID, bidder1);
-        assertEq(committedSlice, uint256(selfRaise), "C-01sN: committed slice != Y");
+        assertEq(committedSlice, uint256(selfRaise), "committed slice != Y");
 
         Lot memory lot = a.getLot(LOT_ID);
-        assertEq(lot.highBidder, bidder1, "C-01sN: highBidder not bidder1");
-        assertEq(uint256(lot.highBid), selfRaise, "C-01sN: highBid != Y");
-        assertEq(uint256(lot.winnerSeq), 2, "C-01sN: winnerSeq not the second bid seq");
+        assertEq(lot.highBidder, bidder1, "highBidder not bidder1");
+        assertEq(uint256(lot.highBid), selfRaise, "highBid != Y");
+        assertEq(uint256(lot.winnerSeq), 2, "winnerSeq not the second bid seq");
 
-        assertEq(address(a).balance, balBefore, "C-01sN: contract balance moved on self-raise");
-        assertEq(_nativeBuckets(a, who), bucketsBefore, "C-01sN: native bucket sum changed on self-raise");
-        assertEq(_nativeBuckets(a, who), balBefore, "C-01sN: native buckets != balance after self-raise");
+        assertEq(address(a).balance, balBefore, "contract balance moved on self-raise");
+        assertEq(_nativeBuckets(a, who), bucketsBefore, "native bucket sum changed on self-raise");
+        assertEq(_nativeBuckets(a, who), balBefore, "native buckets != balance after self-raise");
     }
 
     // Minimal-increment rebalance: B outbids A at exactly _minBid (the 2% floor edge), so the committed
@@ -557,11 +557,11 @@ contract EscrowFundsTest is HammerBase {
         // BidTooLow).
         uint128 increment = uint128(Math.mulDiv(uint256(BID_A), MIN_INCREMENT_BPS, 10_000));
         uint128 bidB = BID_A + increment;
-        assertEq(uint256(bidB), uint256(BID_A) + Math.mulDiv(uint256(BID_A), MIN_INCREMENT_BPS, 10_000), "C-01mi: bidB != _minBid");
+        assertEq(uint256(bidB), uint256(BID_A) + Math.mulDiv(uint256(BID_A), MIN_INCREMENT_BPS, 10_000), "bidB != _minBid");
 
         uint256 balBefore = token.balanceOf(address(auctionT));
         uint256 bucketsBefore = _erc20Buckets(auctionT, who);
-        assertEq(bucketsBefore, balBefore, "C-01mi: buckets != balance pre-outbid");
+        assertEq(bucketsBefore, balBefore, "buckets != balance pre-outbid");
 
         // Outbid at the floor: the released-from-prior-top amount is A's free after A's committed
         // returned (CEILING_A).
@@ -576,17 +576,17 @@ contract EscrowFundsTest is HammerBase {
         // Committed slice == accepted bid to the wei at the floor: B.committed (deposit - free) == bidB,
         // and lot.highBid == bidB.
         Lot memory lot = auctionT.getLot(LOT_ID);
-        assertEq(uint256(lot.highBid), uint256(bidB), "C-01mi: highBid != minimal-increment bid");
+        assertEq(uint256(lot.highBid), uint256(bidB), "highBid != minimal-increment bid");
         uint256 committedSlice = uint256(CEILING_B) - auctionT.withdrawableFree(LOT_ID, bidder2);
-        assertEq(committedSlice, uint256(bidB), "C-01mi: B committed slice != bidB at the increment floor");
-        assertEq(committedSlice, uint256(lot.highBid), "C-01mi: committed slice != lot.highBid at the floor");
-        assertEq(lot.highBidder, bidder2, "C-01mi: highBidder not B");
+        assertEq(committedSlice, uint256(bidB), "B committed slice != bidB at the increment floor");
+        assertEq(committedSlice, uint256(lot.highBid), "committed slice != lot.highBid at the floor");
+        assertEq(lot.highBidder, bidder2, "highBidder not B");
 
         // A fully released to free; no external transfer; full bucket conservation at the floor.
-        assertEq(auctionT.withdrawableFree(LOT_ID, bidder1), uint256(CEILING_A), "C-01mi: A not fully released");
-        assertEq(token.balanceOf(address(auctionT)), balBefore, "C-01mi: contract balance moved at the floor");
-        assertEq(_erc20Buckets(auctionT, who), bucketsBefore, "C-01mi: bucket sum changed at the floor");
-        assertEq(_erc20Buckets(auctionT, who), balBefore, "C-01mi: buckets != balance after the floor rebalance");
+        assertEq(auctionT.withdrawableFree(LOT_ID, bidder1), uint256(CEILING_A), "A not fully released");
+        assertEq(token.balanceOf(address(auctionT)), balBefore, "contract balance moved at the floor");
+        assertEq(_erc20Buckets(auctionT, who), bucketsBefore, "bucket sum changed at the floor");
+        assertEq(_erc20Buckets(auctionT, who), balBefore, "buckets != balance after the floor rebalance");
     }
 
     // Fail-closed InsufficientFreeBalance on a native-denominated clone: free_B (N_BID_A - 1) < amount
@@ -607,10 +607,10 @@ contract EscrowFundsTest is HammerBase {
 
         // Fails closed: no top, free intact, no extra wei pulled.
         Lot memory lot = a.getLot(LOT_ID);
-        assertEq(lot.highBidder, address(0), "C-02N: a top was recorded on revert");
-        assertEq(uint256(lot.highBid), 0, "C-02N: highBid moved on revert");
-        assertEq(a.withdrawableFree(LOT_ID, bidder2), smallDeposit, "C-02N: free changed on revert");
-        assertEq(address(a).balance, balBefore, "C-02N: a spurious native pull occurred");
+        assertEq(lot.highBidder, address(0), "a top was recorded on revert");
+        assertEq(uint256(lot.highBid), 0, "highBid moved on revert");
+        assertEq(a.withdrawableFree(LOT_ID, bidder2), smallDeposit, "free changed on revert");
+        assertEq(address(a).balance, balBefore, "a spurious native pull occurred");
     }
 
     // _commitBid reverts InsufficientFreeBalance when free_B < amount; fails closed (top untouched, no
@@ -629,10 +629,10 @@ contract EscrowFundsTest is HammerBase {
 
         // Fails closed: no top recorded, escrow untouched, free unchanged, no token pulled.
         Lot memory lot = auctionT.getLot(LOT_ID);
-        assertEq(lot.highBidder, address(0), "C-02: a top was recorded on revert");
-        assertEq(uint256(lot.highBid), 0, "C-02: highBid moved on revert");
-        assertEq(auctionT.withdrawableFree(LOT_ID, bidder2), smallDeposit, "C-02: free changed on revert");
-        assertEq(token.balanceOf(address(auctionT)), contractBalBefore, "C-02: a spurious token pull occurred");
+        assertEq(lot.highBidder, address(0), "a top was recorded on revert");
+        assertEq(uint256(lot.highBid), 0, "highBid moved on revert");
+        assertEq(auctionT.withdrawableFree(LOT_ID, bidder2), smallDeposit, "free changed on revert");
+        assertEq(token.balanceOf(address(auctionT)), contractBalBefore, "a spurious token pull occurred");
 
         // No nonce consumed by the failed bid: a retry by B at bidIndex 0 still authorizes. Top up so
         // the retry has free >= amount. This retry is the lot's first accepted bid, so it emits the
@@ -675,16 +675,16 @@ contract EscrowFundsTest is HammerBase {
         // After hammer: escrowAmount == BID_A (== winner.committed), committed zeroed, A's free
         // unchanged at CEILING_A - BID_A, phase Hammered.
         Lot memory lot = auctionT.getLot(LOT_ID);
-        assertEq(uint256(lot.escrowAmount), BID_A, "C-03: escrowAmount != committed snapshot");
-        assertEq(uint8(lot.phase), uint8(LotPhase.Hammered), "C-03: phase not Hammered");
-        assertEq(uint256(lot.winnerSeq), 1, "C-03: winnerSeq not the winning bid seq");
+        assertEq(uint256(lot.escrowAmount), BID_A, "escrowAmount != committed snapshot");
+        assertEq(uint8(lot.phase), uint8(LotPhase.Hammered), "phase not Hammered");
+        assertEq(uint256(lot.winnerSeq), 1, "winnerSeq not the winning bid seq");
         assertEq(
             auctionT.withdrawableFree(LOT_ID, bidder1),
             CEILING_A - BID_A,
-            "C-03: winner free changed at lock"
+            "winner free changed at lock"
         );
         // No transfer at hammer.
-        assertEq(token.balanceOf(address(auctionT)), balBefore, "C-03: balance moved at hammer");
+        assertEq(token.balanceOf(address(auctionT)), balBefore, "balance moved at hammer");
 
         // Single-shot guard: finalizeWinner (after the AC window) must NOT re-snapshot; it leaves
         // escrowAmount unchanged (a second _lockEscrow that zeroed it would later revert NoEscrow).
@@ -699,12 +699,12 @@ contract EscrowFundsTest is HammerBase {
         assertEq(
             uint256(afterFinalize.escrowAmount),
             BID_A,
-            "C-03: finalizeWinner re-locked (escrow zeroed/changed)"
+            "finalizeWinner re-locked (escrow zeroed/changed)"
         );
         assertEq(
             uint8(afterFinalize.deliveryState),
             uint8(DeliveryState.AwaitingDelivery),
-            "C-03: finalize did not enter AwaitingDelivery"
+            "finalize did not enter AwaitingDelivery"
         );
     }
 
@@ -731,8 +731,8 @@ contract EscrowFundsTest is HammerBase {
         auctionN.depositCeiling{value: uint256(N_CEILING_A) + 1}(LOT_ID, N_CEILING_A);
 
         // No free credited and no wei stranded in the contract on either revert.
-        assertEq(auctionN.withdrawableFree(LOT_ID, bidder1), 0, "C-04a: free credited on revert");
-        assertEq(address(auctionN).balance, 0, "C-04a: wei stranded in contract on revert");
+        assertEq(auctionN.withdrawableFree(LOT_ID, bidder1), 0, "free credited on revert");
+        assertEq(address(auctionN).balance, 0, "wei stranded in contract on revert");
     }
 
     // ERC-20 rail, msg.value != 0 reverts WrongDenomination even with a valid approval (the ERC-20 _pull
@@ -750,8 +750,8 @@ contract EscrowFundsTest is HammerBase {
         vm.stopPrank();
 
         // No free credited and no token pulled on revert.
-        assertEq(auctionT.withdrawableFree(LOT_ID, bidder1), 0, "C-04b: free credited on revert");
-        assertEq(token.balanceOf(address(auctionT)), 0, "C-04b: token pulled on revert");
+        assertEq(auctionT.withdrawableFree(LOT_ID, bidder1), 0, "free credited on revert");
+        assertEq(token.balanceOf(address(auctionT)), 0, "token pulled on revert");
     }
 
     // A repeat deposit tops up free; each emits CeilingDeposited with the running newFree, and the
@@ -782,12 +782,12 @@ contract EscrowFundsTest is HammerBase {
         assertEq(
             auctionT.withdrawableFree(LOT_ID, bidder1),
             uint256(first) + second,
-            "C-04c: top-up did not accumulate free"
+            "top-up did not accumulate free"
         );
         assertEq(
             token.balanceOf(address(auctionT)) - balBefore,
             uint256(first) + second,
-            "C-04c: contract did not pull the summed deposit via safeTransferFrom"
+            "contract did not pull the summed deposit via safeTransferFrom"
         );
     }
 
@@ -819,12 +819,12 @@ contract EscrowFundsTest is HammerBase {
         assertEq(
             a.withdrawableFree(LOT_ID, bidder1),
             uint256(first) + second,
-            "C-04cN: native top-up did not accumulate free"
+            "native top-up did not accumulate free"
         );
         assertEq(
             address(a).balance - balBefore,
             uint256(first) + second,
-            "C-04cN: contract native balance != summed deposit"
+            "contract native balance != summed deposit"
         );
     }
 
@@ -845,7 +845,7 @@ contract EscrowFundsTest is HammerBase {
         assertEq(
             auctionT.withdrawableFree(LOT_ID, bidder1),
             uint256(RESERVE_TOKEN),
-            "C-08bd: exact-reserve deposit not credited to free"
+            "exact-reserve deposit not credited to free"
         );
 
         // A strictly-below-reserve deposit also succeeds and credits free (the floor is at placeBid).
@@ -855,7 +855,7 @@ contract EscrowFundsTest is HammerBase {
         token.approve(address(auctionT), belowReserve);
         auctionT.depositCeiling(LOT_ID, belowReserve);
         vm.stopPrank();
-        assertEq(auctionT.withdrawableFree(LOT_ID, bidder2), uint256(belowReserve), "C-08bd: below-reserve deposit not credited");
+        assertEq(auctionT.withdrawableFree(LOT_ID, bidder2), uint256(belowReserve), "below-reserve deposit not credited");
     }
 
     // Reserve-floor boundary on a native clone. The native deposit is pulled via msg.value == amount, so
@@ -871,7 +871,7 @@ contract EscrowFundsTest is HammerBase {
         vm.deal(bidder1, uint256(belowReserveN));
         vm.prank(bidder1);
         a.depositCeiling{value: belowReserveN}(LOT_ID, belowReserveN);
-        assertEq(a.withdrawableFree(LOT_ID, bidder1), uint256(belowReserveN), "C-08bdN: below-reserve native deposit not credited");
+        assertEq(a.withdrawableFree(LOT_ID, bidder1), uint256(belowReserveN), "below-reserve native deposit not credited");
 
         // An exact-reserve native deposit succeeds and credits free == RESERVE_PRICE.
         uint128 exact = uint128(RESERVE_PRICE);
@@ -883,10 +883,10 @@ contract EscrowFundsTest is HammerBase {
         assertEq(
             a.withdrawableFree(LOT_ID, bidder2),
             uint256(exact),
-            "C-08bdN: exact-reserve native deposit not credited to free"
+            "exact-reserve native deposit not credited to free"
         );
         // The contract holds both accepted deposits (the sub-reserve deposit is not rejected).
-        assertEq(address(a).balance, uint256(belowReserveN) + uint256(exact), "C-08bdN: native balance != the two accepted deposits");
+        assertEq(address(a).balance, uint256(belowReserveN) + uint256(exact), "native balance != the two accepted deposits");
     }
 
     // withdrawDeposit (nonReentrant, CEI) pulls up to current free; committed (the standing high bid) is
@@ -899,7 +899,7 @@ contract EscrowFundsTest is HammerBase {
         _placeBid(auctionT, bidder1, bidder1Key, 0, BID_A, 0, keccak256("qn-A"));
 
         uint128 freeBefore = CEILING_A - BID_A;
-        assertEq(auctionT.withdrawableFree(LOT_ID, bidder1), freeBefore, "C-05: free precondition");
+        assertEq(auctionT.withdrawableFree(LOT_ID, bidder1), freeBefore, "free precondition");
 
         // Zero-amount guard: withdrawDeposit(lotId, 0) reverts NothingToWithdraw even with free
         // positive, so amount == 0 is rejected before any debit. Distinct from the no-free guard in
@@ -908,8 +908,8 @@ contract EscrowFundsTest is HammerBase {
         vm.prank(bidder1);
         vm.expectRevert(ISessionAuction.NothingToWithdraw.selector);
         auctionT.withdrawDeposit(LOT_ID, 0);
-        assertEq(token.balanceOf(bidder1), balBeforeZero, "C-05: paid on a zero-amount withdraw");
-        assertEq(auctionT.withdrawableFree(LOT_ID, bidder1), freeBefore, "C-05: free moved on zero-amount withdraw");
+        assertEq(token.balanceOf(bidder1), balBeforeZero, "paid on a zero-amount withdraw");
+        assertEq(auctionT.withdrawableFree(LOT_ID, bidder1), freeBefore, "free moved on zero-amount withdraw");
 
         uint128 w = freeBefore; // pull the entire free slice, leaving committed intact
         uint256 bidderBalBefore = token.balanceOf(bidder1);
@@ -922,13 +922,13 @@ contract EscrowFundsTest is HammerBase {
 
         // free drained to 0; committed is never withdrawable, so escrow behind A is untouched; bidder
         // received exactly w.
-        assertEq(auctionT.withdrawableFree(LOT_ID, bidder1), 0, "C-05: free not decremented by w");
-        assertEq(token.balanceOf(bidder1), bidderBalBefore + w, "C-05: bidder not paid w");
+        assertEq(auctionT.withdrawableFree(LOT_ID, bidder1), 0, "free not decremented by w");
+        assertEq(token.balanceOf(bidder1), bidderBalBefore + w, "bidder not paid w");
 
         // committed stays locked: A is still the top, so a hammer would snapshot BID_A.
         Lot memory lot = auctionT.getLot(LOT_ID);
-        assertEq(uint256(lot.highBid), BID_A, "C-05: committed high bid disturbed by free withdraw");
-        assertEq(lot.highBidder, bidder1, "C-05: top bidder changed by free withdraw");
+        assertEq(uint256(lot.highBid), BID_A, "committed high bid disturbed by free withdraw");
+        assertEq(lot.highBidder, bidder1, "top bidder changed by free withdraw");
     }
 
     // Partial withdraw leaving a strictly-positive remainder. The other non-reverting withdrawDeposit
@@ -942,13 +942,13 @@ contract EscrowFundsTest is HammerBase {
         _placeBid(auctionT, bidder1, bidder1Key, 0, BID_A, 0, keccak256("qn-A"));
 
         uint128 freeBefore = CEILING_A - BID_A;
-        assertEq(auctionT.withdrawableFree(LOT_ID, bidder1), freeBefore, "C-05p: free precondition");
+        assertEq(auctionT.withdrawableFree(LOT_ID, bidder1), freeBefore, "free precondition");
 
         // w is strictly less than free (half), so a positive remainder survives. The strict-bound
         // asserts below keep this test from silently degrading into a full drain.
         uint128 w = freeBefore / 2;
-        assertGt(uint256(w), 0, "C-05p: chosen partial w is not positive");
-        assertLt(uint256(w), uint256(freeBefore), "C-05p: chosen partial w is not strictly below free");
+        assertGt(uint256(w), 0, "chosen partial w is not positive");
+        assertLt(uint256(w), uint256(freeBefore), "chosen partial w is not strictly below free");
 
         uint256 bidderBalBefore = token.balanceOf(bidder1);
         uint256 contractBalBefore = token.balanceOf(address(auctionT));
@@ -962,16 +962,16 @@ contract EscrowFundsTest is HammerBase {
         // free decremented by exactly w to a strictly positive remainder (a wholesale `free = 0` would
         // leave 0 here).
         uint256 remainder = uint256(freeBefore) - w;
-        assertGt(remainder, 0, "C-05p: test misconfigured, remainder not positive");
-        assertEq(auctionT.withdrawableFree(LOT_ID, bidder1), remainder, "C-05p: free not decremented by w (wholesale-zeroed?)");
+        assertGt(remainder, 0, "test misconfigured, remainder not positive");
+        assertEq(auctionT.withdrawableFree(LOT_ID, bidder1), remainder, "free not decremented by w (wholesale-zeroed?)");
         // safeTransferFrom leg paid exactly w; contract released exactly w.
-        assertEq(token.balanceOf(bidder1) - bidderBalBefore, w, "C-05p: bidder not paid exactly w on the first leg");
-        assertEq(contractBalBefore - token.balanceOf(address(auctionT)), w, "C-05p: contract released != w on the first leg");
+        assertEq(token.balanceOf(bidder1) - bidderBalBefore, w, "bidder not paid exactly w on the first leg");
+        assertEq(contractBalBefore - token.balanceOf(address(auctionT)), w, "contract released != w on the first leg");
 
         // committed untouched by the partial free withdraw: A still the top, highBid still BID_A.
         Lot memory lot = auctionT.getLot(LOT_ID);
-        assertEq(uint256(lot.highBid), BID_A, "C-05p: committed high bid disturbed by partial free withdraw");
-        assertEq(lot.highBidder, bidder1, "C-05p: top bidder changed by partial free withdraw");
+        assertEq(uint256(lot.highBid), BID_A, "committed high bid disturbed by partial free withdraw");
+        assertEq(lot.highBidder, bidder1, "top bidder changed by partial free withdraw");
 
         // Second partial withdraw of the remainder drains free to 0, proving the first call subtracted
         // rather than confiscated (the remainder was still withdrawable).
@@ -982,16 +982,16 @@ contract EscrowFundsTest is HammerBase {
         vm.prank(bidder1);
         auctionT.withdrawDeposit(LOT_ID, remainder);
 
-        assertEq(auctionT.withdrawableFree(LOT_ID, bidder1), 0, "C-05p: remainder not drained to 0 on the second leg");
-        assertEq(token.balanceOf(bidder1) - bidderBalMid, remainder, "C-05p: bidder not paid the remainder on the second leg");
-        assertEq(contractBalMid - token.balanceOf(address(auctionT)), remainder, "C-05p: contract released != remainder on the second leg");
+        assertEq(auctionT.withdrawableFree(LOT_ID, bidder1), 0, "remainder not drained to 0 on the second leg");
+        assertEq(token.balanceOf(bidder1) - bidderBalMid, remainder, "bidder not paid the remainder on the second leg");
+        assertEq(contractBalMid - token.balanceOf(address(auctionT)), remainder, "contract released != remainder on the second leg");
         // committed intact after both free legs: the high bid never moved.
         Lot memory afterBoth = auctionT.getLot(LOT_ID);
-        assertEq(uint256(afterBoth.highBid), BID_A, "C-05p: committed disturbed across the two free withdraws");
-        assertEq(afterBoth.highBidder, bidder1, "C-05p: top bidder changed across the two free withdraws");
+        assertEq(uint256(afterBoth.highBid), BID_A, "committed disturbed across the two free withdraws");
+        assertEq(afterBoth.highBidder, bidder1, "top bidder changed across the two free withdraws");
         // Across both legs the bidder received exactly the full free slice (w + remainder == freeBefore),
         // no double-pay and no confiscation.
-        assertEq(token.balanceOf(bidder1) - bidderBalBefore, uint256(freeBefore), "C-05p: total paid != full free slice");
+        assertEq(token.balanceOf(bidder1) - bidderBalBefore, uint256(freeBefore), "total paid != full free slice");
     }
 
     // w > free reverts InsufficientFreeBalance (committed is never withdrawable).
@@ -1008,11 +1008,11 @@ contract EscrowFundsTest is HammerBase {
         auctionT.withdrawDeposit(LOT_ID, overByOne);
 
         // Nothing paid out, committed untouched.
-        assertEq(token.balanceOf(bidder1), bidderBalBefore, "C-05r: bidder paid on revert");
+        assertEq(token.balanceOf(bidder1), bidderBalBefore, "bidder paid on revert");
         assertEq(
             auctionT.withdrawableFree(LOT_ID, bidder1),
             CEILING_A - BID_A,
-            "C-05r: free changed on revert"
+            "free changed on revert"
         );
     }
 
@@ -1028,7 +1028,7 @@ contract EscrowFundsTest is HammerBase {
         uint128 freeSlice = CEILING_A - BID_A;
         vm.prank(bidder1);
         auctionT.withdrawDeposit(LOT_ID, freeSlice);
-        assertEq(auctionT.withdrawableFree(LOT_ID, bidder1), 0, "C-05n: free not fully drained");
+        assertEq(auctionT.withdrawableFree(LOT_ID, bidder1), 0, "free not fully drained");
 
         uint256 bidderBalBefore = token.balanceOf(bidder1);
 
@@ -1043,8 +1043,8 @@ contract EscrowFundsTest is HammerBase {
         auctionT.withdrawDeposit(LOT_ID, 1);
 
         // Nothing paid out on either revert; committed (the standing top bid) intact.
-        assertEq(token.balanceOf(bidder1), bidderBalBefore, "C-05n: bidder paid on a no-free withdraw");
-        assertEq(uint256(auctionT.getLot(LOT_ID).highBid), BID_A, "C-05n: committed disturbed");
+        assertEq(token.balanceOf(bidder1), bidderBalBefore, "bidder paid on a no-free withdraw");
+        assertEq(uint256(auctionT.getLot(LOT_ID).highBid), BID_A, "committed disturbed");
     }
 
     // claimPending (nonReentrant) drains the caller's failed-push credit via _pay, zeroing the slot
@@ -1072,12 +1072,12 @@ contract EscrowFundsTest is HammerBase {
         a.confirmReceipt(LOT_ID, keccak256("photo"), "ipfs://photo");
 
         uint256 pending = a.pendingWithdrawal(address(sellerC));
-        assertEq(pending, proceeds, "C-06: pending credit != released proceeds");
+        assertEq(pending, proceeds, "pending credit != released proceeds");
 
         // Native bucket conservation after the failed-push credit: the parked proceeds sit in the
         // seller's pending bucket and the fee left to the EOA feeRecipient.
         address[4] memory who = [bidder1, address(sellerC), seller, houseFeeRecipient];
-        assertEq(_nativeBuckets(a, who), address(a).balance, "C-06: native buckets != balance after credit");
+        assertEq(_nativeBuckets(a, who), address(a).balance, "native buckets != balance after credit");
 
         // Toggle the receiver to accept and arm the CEI readback: claimPending must zero the slot before
         // the external call, so the receiver's mid-push read of its own pending sees 0.
@@ -1094,16 +1094,16 @@ contract EscrowFundsTest is HammerBase {
 
         // CEI: the push fired and the slot was already zero when the receiver read it mid-push (zeroed
         // before the external call, not pay-then-zero).
-        assertTrue(sellerC.sawPush(), "C-06: claim push never reached the receiver");
-        assertEq(sellerC.pendingDuringPush(), 0, "C-06: pending NOT zeroed before the external push (CEI violated)");
+        assertTrue(sellerC.sawPush(), "claim push never reached the receiver");
+        assertEq(sellerC.pendingDuringPush(), 0, "pending NOT zeroed before the external push (CEI violated)");
 
-        assertEq(a.pendingWithdrawal(address(sellerC)), 0, "C-06: pending not zeroed");
+        assertEq(a.pendingWithdrawal(address(sellerC)), 0, "pending not zeroed");
         assertEq(
             address(a).balance,
             contractBalBefore - pending,
-            "C-06: contract did not pay out the pending credit"
+            "contract did not pay out the pending credit"
         );
-        assertEq(address(sellerC).balance - payeeBalBefore, pending, "C-06: payee not paid on claim");
+        assertEq(address(sellerC).balance - payeeBalBefore, pending, "payee not paid on claim");
 
         // Double-claim guard: a second claimPending by the same account reverts NothingToWithdraw and
         // pays nothing (the slot was zeroed before the pay and cannot be re-drained).
@@ -1112,8 +1112,8 @@ contract EscrowFundsTest is HammerBase {
         vm.prank(address(sellerC));
         vm.expectRevert(ISessionAuction.NothingToWithdraw.selector);
         a.claimPending();
-        assertEq(address(a).balance, balAfterDrain, "C-06: contract paid out on a second (empty) claim");
-        assertEq(address(sellerC).balance, payeeAfterDrain, "C-06: payee re-paid on a second (empty) claim");
+        assertEq(address(a).balance, balAfterDrain, "contract paid out on a second (empty) claim");
+        assertEq(address(sellerC).balance, payeeAfterDrain, "payee re-paid on a second (empty) claim");
     }
 
     // claimPending() by an account with zero pending credit reverts NothingToWithdraw and pays nothing
@@ -1123,7 +1123,7 @@ contract EscrowFundsTest is HammerBase {
         _initAndOpen(a, address(0), RESERVE_PRICE, uint64(block.timestamp + 1 days));
 
         // bidder3 never had a failed push, so its pending is 0.
-        assertEq(a.pendingWithdrawal(bidder3), 0, "C-06e: precondition pending nonzero");
+        assertEq(a.pendingWithdrawal(bidder3), 0, "precondition pending nonzero");
         uint256 contractBalBefore = address(a).balance;
         uint256 callerBalBefore = bidder3.balance;
 
@@ -1132,8 +1132,8 @@ contract EscrowFundsTest is HammerBase {
         a.claimPending();
 
         // No payout on the empty claim.
-        assertEq(address(a).balance, contractBalBefore, "C-06e: contract paid out on an empty claim");
-        assertEq(bidder3.balance, callerBalBefore, "C-06e: caller paid on an empty claim");
+        assertEq(address(a).balance, contractBalBefore, "contract paid out on an empty claim");
+        assertEq(bidder3.balance, callerBalBefore, "caller paid on an empty claim");
     }
 
     // _pay with pending-credit fallback. A failing native push (receive() reverts) credits the recipient
@@ -1166,24 +1166,24 @@ contract EscrowFundsTest is HammerBase {
 
         // Escrow left _release exactly once: escrowAmount zeroed, phase Settled, deliveryState Released.
         Lot memory settled = a.getLot(LOT_ID);
-        assertEq(uint256(settled.escrowAmount), 0, "C-07: escrow not zeroed after release");
-        assertEq(uint8(settled.phase), uint8(LotPhase.Settled), "C-07: phase not Settled");
-        assertEq(uint8(settled.deliveryState), uint8(DeliveryState.Released), "C-07: not Released");
+        assertEq(uint256(settled.escrowAmount), 0, "escrow not zeroed after release");
+        assertEq(uint8(settled.phase), uint8(LotPhase.Settled), "phase not Settled");
+        assertEq(uint8(settled.deliveryState), uint8(DeliveryState.Released), "not Released");
 
         // Proceeds sit in pending (not pushed): pending == proceeds, the seller's raw balance did not
         // increase, and the contract still holds the proceeds (only the fee left). The contract-retains
         // check catches a buggy impl that both credits and pays.
-        assertEq(a.pendingWithdrawal(address(sellerC)), proceeds, "C-07: failed push not credited to pending");
-        assertEq(address(sellerC).balance, sellerRawBefore, "C-07: seller raw balance moved (push should have failed)");
-        assertEq(houseFeeRecipient.balance - feeRecipBefore, fee, "C-07: fee leg not paid");
-        assertEq(contractBalBefore - address(a).balance, fee, "C-07: contract did not retain the parked proceeds");
+        assertEq(a.pendingWithdrawal(address(sellerC)), proceeds, "failed push not credited to pending");
+        assertEq(address(sellerC).balance, sellerRawBefore, "seller raw balance moved (push should have failed)");
+        assertEq(houseFeeRecipient.balance - feeRecipBefore, fee, "fee leg not paid");
+        assertEq(contractBalBefore - address(a).balance, fee, "contract did not retain the parked proceeds");
 
         // Full native bucket conservation across the pay-with-pending fallback: escrowAmount is 0, the
         // proceeds sit in the seller's pending bucket, the fee left to the EOA feeRecipient. An impl that
         // credited pending but failed to retain the wei (or double-counted) breaks this even though the
         // point assertions pass.
         address[4] memory who = [bidder1, address(sellerC), seller, houseFeeRecipient];
-        assertEq(_nativeBuckets(a, who), address(a).balance, "C-07: native bucket sum != balance after parked credit");
+        assertEq(_nativeBuckets(a, who), address(a).balance, "native bucket sum != balance after parked credit");
     }
 
     // Native gas-cap path: the seller's receive() does not revert but burns well over 50_000 gas, so it
@@ -1220,22 +1220,22 @@ contract EscrowFundsTest is HammerBase {
         // Escrow left _release exactly once despite the gas-capped push: escrowAmount zeroed, phase
         // Settled, deliveryState Released (the lot settles regardless of push outcome).
         Lot memory settled = a.getLot(LOT_ID);
-        assertEq(uint256(settled.escrowAmount), 0, "C-07g: escrow not zeroed after gas-capped release");
-        assertEq(uint8(settled.phase), uint8(LotPhase.Settled), "C-07g: phase not Settled");
-        assertEq(uint8(settled.deliveryState), uint8(DeliveryState.Released), "C-07g: not Released");
+        assertEq(uint256(settled.escrowAmount), 0, "escrow not zeroed after gas-capped release");
+        assertEq(uint8(settled.phase), uint8(LotPhase.Settled), "phase not Settled");
+        assertEq(uint8(settled.deliveryState), uint8(DeliveryState.Released), "not Released");
 
         // The burner was not paid (cap starved its receive()): proceeds in pending, seller raw balance
         // unchanged, fee leg to the EOA feeRecipient paid, contract retained the proceeds. An uncapped
         // call would let the burner succeed (pending == 0, seller raw balance += proceeds).
-        assertEq(a.pendingWithdrawal(address(sellerC)), proceeds, "C-07g: gas-burner push not credited to pending (cap dropped?)");
-        assertEq(address(sellerC).balance, sellerRawBefore, "C-07g: seller raw balance moved (cap let the burner succeed)");
-        assertEq(houseFeeRecipient.balance - feeRecipBefore, fee, "C-07g: fee leg not paid");
-        assertEq(contractBalBefore - address(a).balance, fee, "C-07g: contract did not retain the parked proceeds");
+        assertEq(a.pendingWithdrawal(address(sellerC)), proceeds, "gas-burner push not credited to pending (cap dropped?)");
+        assertEq(address(sellerC).balance, sellerRawBefore, "seller raw balance moved (cap let the burner succeed)");
+        assertEq(houseFeeRecipient.balance - feeRecipBefore, fee, "fee leg not paid");
+        assertEq(contractBalBefore - address(a).balance, fee, "contract did not retain the parked proceeds");
 
         // Full native bucket conservation across the gas-capped fallback: escrowAmount is 0, proceeds in
         // the seller's pending bucket, fee out to the EOA feeRecipient.
         address[4] memory who = [bidder1, address(sellerC), seller, houseFeeRecipient];
-        assertEq(_nativeBuckets(a, who), address(a).balance, "C-07g: native bucket sum != balance after gas-capped credit");
+        assertEq(_nativeBuckets(a, who), address(a).balance, "native bucket sum != balance after gas-capped credit");
 
         // The parked credit is recoverable: once it stops burning, the burner claims via the pull path
         // (a normal claimPending push is well under the cap), proving the cap parked but did not destroy.
@@ -1246,9 +1246,9 @@ contract EscrowFundsTest is HammerBase {
         emit ISessionAuction.WithdrawalClaimed(address(sellerC), proceeds);
         vm.prank(address(sellerC));
         a.claimPending();
-        assertEq(a.pendingWithdrawal(address(sellerC)), 0, "C-07g: pending not zeroed on the recovery claim");
-        assertEq(address(sellerC).balance - burnerBalBeforeClaim, proceeds, "C-07g: burner not paid the parked proceeds on claim");
-        assertEq(contractBalBeforeClaim - address(a).balance, proceeds, "C-07g: contract did not release the parked proceeds on claim");
+        assertEq(a.pendingWithdrawal(address(sellerC)), 0, "pending not zeroed on the recovery claim");
+        assertEq(address(sellerC).balance - burnerBalBeforeClaim, proceeds, "burner not paid the parked proceeds on claim");
+        assertEq(contractBalBeforeClaim - address(a).balance, proceeds, "contract did not release the parked proceeds on claim");
     }
 
     // ERC-20 rail: _pay uses SafeERC20.trySafeTransfer; a token whose transfer() returns false (never
@@ -1302,36 +1302,36 @@ contract EscrowFundsTest is HammerBase {
         a.confirmReceipt(LOT_ID, keccak256("photo"), "ipfs://photo");
 
         Lot memory settled = a.getLot(LOT_ID);
-        assertEq(uint256(settled.escrowAmount), 0, "C-07e: escrow not zeroed after release");
-        assertEq(uint8(settled.phase), uint8(LotPhase.Settled), "C-07e: phase not Settled");
-        assertEq(a.pendingWithdrawal(seller), proceeds, "C-07e: seller proceeds not parked");
-        assertEq(a.pendingWithdrawal(houseFeeRecipient), fee, "C-07e: fee not parked");
+        assertEq(uint256(settled.escrowAmount), 0, "escrow not zeroed after release");
+        assertEq(uint8(settled.phase), uint8(LotPhase.Settled), "phase not Settled");
+        assertEq(a.pendingWithdrawal(seller), proceeds, "seller proceeds not parked");
+        assertEq(a.pendingWithdrawal(houseFeeRecipient), fee, "fee not parked");
         // No token left the contract on the failed pushes (escrow stays parked as credits).
-        assertEq(badToken.balanceOf(seller), 0, "C-07e: seller paid despite false transfer");
-        assertEq(badToken.balanceOf(houseFeeRecipient), 0, "C-07e: feeRecipient paid despite false transfer");
+        assertEq(badToken.balanceOf(seller), 0, "seller paid despite false transfer");
+        assertEq(badToken.balanceOf(houseFeeRecipient), 0, "feeRecipient paid despite false transfer");
         // Contract-retains-proceeds: with both legs failed, the full proceeds + fee still back the parked
         // credits, so the contract token balance is unchanged. A _pay that misrouted/burned tokens on the
         // false branch yet still credited pending would pass the per-recipient zero checks but fail here.
         assertEq(
             badToken.balanceOf(address(a)),
             contractTokenBefore,
-            "C-07e: contract token balance moved despite both pushes failing"
+            "contract token balance moved despite both pushes failing"
         );
         // The contract token balance is the parked escrow (proceeds + fee == BID_A) plus the winner's
         // unwithdrawn free remainder (CEILING_A - BID_A: bidder1 deposited CEILING_A but committed only
         // BID_A), so it equals CEILING_A.
         uint256 winnerFreeRemainder = uint256(CEILING_A) - uint256(BID_A);
-        assertEq(proceeds + fee, uint256(BID_A), "C-07e: parked escrow (proceeds + fee) != BID_A");
-        assertEq(a.withdrawableFree(LOT_ID, bidder1), winnerFreeRemainder, "C-07e: winner free remainder mismatch");
+        assertEq(proceeds + fee, uint256(BID_A), "parked escrow (proceeds + fee) != BID_A");
+        assertEq(a.withdrawableFree(LOT_ID, bidder1), winnerFreeRemainder, "winner free remainder mismatch");
         assertEq(
             badToken.balanceOf(address(a)),
             proceeds + fee + winnerFreeRemainder,
-            "C-07e: contract token != parked escrow (proceeds + fee) + winner free remainder"
+            "contract token != parked escrow (proceeds + fee) + winner free remainder"
         );
         assertEq(
             badToken.balanceOf(address(a)),
             uint256(CEILING_A),
-            "C-07e: contract token != full deposited ceiling"
+            "contract token != full deposited ceiling"
         );
     }
 
@@ -1375,19 +1375,19 @@ contract EscrowFundsTest is HammerBase {
         // Release while transfer() returns false: both legs park to pending, the lot still settles.
         vm.prank(bidder1);
         a.confirmReceipt(LOT_ID, keccak256("photo"), "ipfs://photo");
-        assertEq(a.pendingWithdrawal(seller), proceeds, "C-06erc: seller proceeds not parked pre-claim");
-        assertEq(a.pendingWithdrawal(houseFeeRecipient), fee, "C-06erc: fee not parked pre-claim");
+        assertEq(a.pendingWithdrawal(seller), proceeds, "seller proceeds not parked pre-claim");
+        assertEq(a.pendingWithdrawal(houseFeeRecipient), fee, "fee not parked pre-claim");
         // The full escrow backs the parked credits pre-claim, alongside the winner's unwithdrawn free
         // remainder (CEILING_A - BID_A), so the contract token balance == CEILING_A.
         uint256 winnerFreeRemainder = uint256(CEILING_A) - uint256(BID_A);
-        assertEq(proceeds + fee, uint256(BID_A), "C-06erc: parked escrow (proceeds + fee) != BID_A");
-        assertEq(a.withdrawableFree(LOT_ID, bidder1), winnerFreeRemainder, "C-06erc: winner free remainder mismatch");
+        assertEq(proceeds + fee, uint256(BID_A), "parked escrow (proceeds + fee) != BID_A");
+        assertEq(a.withdrawableFree(LOT_ID, bidder1), winnerFreeRemainder, "winner free remainder mismatch");
         assertEq(
             badToken.balanceOf(address(a)),
             proceeds + fee + winnerFreeRemainder,
-            "C-06erc: contract token != parked escrow (proceeds + fee) + winner free remainder"
+            "contract token != parked escrow (proceeds + fee) + winner free remainder"
         );
-        assertEq(badToken.balanceOf(address(a)), uint256(CEILING_A), "C-06erc: contract token != full deposited ceiling");
+        assertEq(badToken.balanceOf(address(a)), uint256(CEILING_A), "contract token != full deposited ceiling");
 
         // Flip the token to a succeeding transfer so claimPending's trySafeTransfer returns true and the
         // token moves. The seller drains its parked proceeds via the pull path.
@@ -1403,25 +1403,25 @@ contract EscrowFundsTest is HammerBase {
 
         // CEI: the slot is zeroed (a re-read sees 0); the token moved exactly proceeds on the success
         // rail, and the fee leg stays parked (only the seller's slot drained, not a wholesale sweep).
-        assertEq(a.pendingWithdrawal(seller), 0, "C-06erc: pending not zeroed on the ERC-20 success drain");
+        assertEq(a.pendingWithdrawal(seller), 0, "pending not zeroed on the ERC-20 success drain");
         assertEq(
             badToken.balanceOf(seller) - sellerTokenBefore,
             proceeds,
-            "C-06erc: payee not paid exactly proceeds on the trySafeTransfer success rail"
+            "payee not paid exactly proceeds on the trySafeTransfer success rail"
         );
         assertEq(
             contractTokenBefore - badToken.balanceOf(address(a)),
             proceeds,
-            "C-06erc: contract did not release exactly proceeds on the success rail"
+            "contract did not release exactly proceeds on the success rail"
         );
         // The fee leg is untouched by the seller's claim: the contract still holds the parked fee plus the
         // winner's free remainder (only the seller's pending slot drained).
-        assertEq(a.pendingWithdrawal(houseFeeRecipient), fee, "C-06erc: fee leg disturbed by the seller drain");
-        assertEq(a.withdrawableFree(LOT_ID, bidder1), winnerFreeRemainder, "C-06erc: winner free remainder disturbed by the seller drain");
+        assertEq(a.pendingWithdrawal(houseFeeRecipient), fee, "fee leg disturbed by the seller drain");
+        assertEq(a.withdrawableFree(LOT_ID, bidder1), winnerFreeRemainder, "winner free remainder disturbed by the seller drain");
         assertEq(
             badToken.balanceOf(address(a)),
             fee + winnerFreeRemainder,
-            "C-06erc: contract token != still-parked fee + winner free remainder after the drain"
+            "contract token != still-parked fee + winner free remainder after the drain"
         );
 
         // ERC-20 double-claim guard: a second claimPending by the now-empty account reverts
@@ -1431,8 +1431,8 @@ contract EscrowFundsTest is HammerBase {
         vm.prank(seller);
         vm.expectRevert(ISessionAuction.NothingToWithdraw.selector);
         a.claimPending();
-        assertEq(badToken.balanceOf(address(a)), contractAfterDrain, "C-06erc: contract paid on a second (empty) ERC-20 claim");
-        assertEq(badToken.balanceOf(seller), sellerAfterDrain, "C-06erc: payee re-paid on a second (empty) ERC-20 claim");
+        assertEq(badToken.balanceOf(address(a)), contractAfterDrain, "contract paid on a second (empty) ERC-20 claim");
+        assertEq(badToken.balanceOf(seller), sellerAfterDrain, "payee re-paid on a second (empty) ERC-20 claim");
     }
 
     // Fee truncation: _feeOf is Math.mulDiv(gross, _feeBps, 10_000), which floors, and the truncation
@@ -1444,15 +1444,15 @@ contract EscrowFundsTest is HammerBase {
     function test_PayFeeTruncationDustToSeller() public {
         // FEE_BPS == 250. Pick escrow == 1 ether + 1 wei so (escrow * 250) % 10_000 != 0.
         uint128 escrow = uint128(1 ether + 1);
-        assertTrue((uint256(escrow) * FEE_BPS) % 10_000 != 0, "C-07d: chosen amount has no fee remainder");
+        assertTrue((uint256(escrow) * FEE_BPS) % 10_000 != 0, "chosen amount has no fee remainder");
 
         SessionAuction a = SessionAuction(Clones.clone(address(impl)));
         _driveToDelivered(a, seller, escrow + 1 ether, escrow);
 
         uint256 fee = Math.mulDiv(escrow, FEE_BPS, 10_000);     // floored
         uint256 proceeds = uint256(escrow) - fee;               // seller captures the remainder
-        assertEq(proceeds + fee, uint256(escrow), "C-07d: proceeds + fee != escrow (wei created/lost)");
-        assertLe(fee * 10_000, uint256(escrow) * FEE_BPS, "C-07d: fee not floored");
+        assertEq(proceeds + fee, uint256(escrow), "proceeds + fee != escrow (wei created/lost)");
+        assertLe(fee * 10_000, uint256(escrow) * FEE_BPS, "fee not floored");
 
         uint256 sellerBefore = seller.balance;
         uint256 feeRecipBefore = houseFeeRecipient.balance;
@@ -1466,26 +1466,26 @@ contract EscrowFundsTest is HammerBase {
         a.confirmReceipt(LOT_ID, keccak256("photo"), "ipfs://photo");
 
         // Seller captures the truncation remainder; feeRecipient gets the floored fee; escrow zeroed.
-        assertEq(seller.balance - sellerBefore, proceeds, "C-07d: seller proceeds (incl dust) wrong");
-        assertEq(houseFeeRecipient.balance - feeRecipBefore, fee, "C-07d: feeRecipient floored fee wrong");
-        assertEq(uint256(a.getLot(LOT_ID).escrowAmount), 0, "C-07d: escrow not zeroed");
+        assertEq(seller.balance - sellerBefore, proceeds, "seller proceeds (incl dust) wrong");
+        assertEq(houseFeeRecipient.balance - feeRecipBefore, fee, "feeRecipient floored fee wrong");
+        assertEq(uint256(a.getLot(LOT_ID).escrowAmount), 0, "escrow not zeroed");
 
         // On-chain conservation: the full escrow left in exactly two legs (proceeds + fee). A split that
         // stranded or burned the odd truncation wei would show a drop of proceeds + fee +/- 1.
         assertEq(
             contractBalBefore - address(a).balance,
             proceeds + fee,
-            "C-07d: contract balance did not drop by exactly proceeds + fee (dust stranded/burned/minted)"
+            "contract balance did not drop by exactly proceeds + fee (dust stranded/burned/minted)"
         );
         // Neither leg parked: both recipients are accepting EOAs, so a correct _release pushes both. A
         // stranded-dust impl that parked the odd wei to pending would trip one of these.
-        assertEq(a.pendingWithdrawal(seller), 0, "C-07d: seller leg parked to pending on the dust path");
-        assertEq(a.pendingWithdrawal(houseFeeRecipient), 0, "C-07d: fee leg parked to pending on the dust path");
+        assertEq(a.pendingWithdrawal(seller), 0, "seller leg parked to pending on the dust path");
+        assertEq(a.pendingWithdrawal(houseFeeRecipient), 0, "fee leg parked to pending on the dust path");
 
         // Full native bucket conservation post-release: escrowAmount is 0, both legs left to EOAs, and the
         // winner's free slack (deposit - escrow == 1 ether) is still tracked.
         address[4] memory who = [bidder1, seller, houseFeeRecipient, bidder2];
-        assertEq(_nativeBuckets(a, who), address(a).balance, "C-07d: native buckets != balance after the dust split");
+        assertEq(_nativeBuckets(a, who), address(a).balance, "native buckets != balance after the dust split");
     }
 
     // Below-reserve deposits and second-escrow-exit guards.
@@ -1508,8 +1508,8 @@ contract EscrowFundsTest is HammerBase {
         vm.stopPrank();
 
         // free credited and token pulled: the reserve floor lives at placeBid, not deposit.
-        assertEq(auctionT.withdrawableFree(LOT_ID, bidder1), uint256(belowReserve), "C-08a: below-reserve deposit not credited");
-        assertEq(token.balanceOf(address(auctionT)), uint256(belowReserve), "C-08a: below-reserve deposit not pulled");
+        assertEq(auctionT.withdrawableFree(LOT_ID, bidder1), uint256(belowReserve), "below-reserve deposit not credited");
+        assertEq(token.balanceOf(address(auctionT)), uint256(belowReserve), "below-reserve deposit not pulled");
     }
 
     // On a Settled lot the first guard in releaseAfterWindow is the delivery-state check (it requires
@@ -1523,8 +1523,8 @@ contract EscrowFundsTest is HammerBase {
         a.confirmReceipt(LOT_ID, keccak256("photo"), "ipfs://photo"); // -> Released/Settled
 
         Lot memory settled = a.getLot(LOT_ID);
-        assertEq(uint256(settled.escrowAmount), 0, "C-08b: escrow not zeroed after first release");
-        assertEq(uint8(settled.phase), uint8(LotPhase.Settled), "C-08b: phase not Settled");
+        assertEq(uint256(settled.escrowAmount), 0, "escrow not zeroed after first release");
+        assertEq(uint8(settled.phase), uint8(LotPhase.Settled), "phase not Settled");
 
         // A second release on the Settled lot reverts on the delivery-state guard (deliveryState is
         // Released, not Delivered), not the spent-escrow guard.
@@ -1534,7 +1534,7 @@ contract EscrowFundsTest is HammerBase {
         a.releaseAfterWindow(LOT_ID);
 
         // No second escrow exit fired: contract balance unchanged by the rejected second release.
-        assertEq(address(a).balance, contractBalBefore, "C-08b: a second escrow exit paid out");
+        assertEq(address(a).balance, contractBalBefore, "a second escrow exit paid out");
     }
 
     // No-double-pay on the winner escrow. The escrow exits via EITHER the reclaim _refund OR
@@ -1558,7 +1558,7 @@ contract EscrowFundsTest is HammerBase {
         uint128 freeSlice = N_CEILING_A - N_BID_A;
         vm.prank(bidder1);
         a.withdrawDeposit(LOT_ID, freeSlice);
-        assertEq(a.withdrawableFree(LOT_ID, bidder1), 0, "C-08b2: winner free not drained");
+        assertEq(a.withdrawableFree(LOT_ID, bidder1), 0, "winner free not drained");
 
         // Seller never delivers; buyer reclaims after the deliver window -> Refunded via _refund, which
         // zeroes lot.escrowAmount.
@@ -1568,8 +1568,8 @@ contract EscrowFundsTest is HammerBase {
         a.reclaimUndelivered(LOT_ID);
 
         Lot memory refunded = a.getLot(LOT_ID);
-        assertEq(uint256(refunded.escrowAmount), 0, "C-08b2: escrow not zeroed by _refund");
-        assertEq(uint8(refunded.phase), uint8(LotPhase.Refunded), "C-08b2: phase not Refunded");
+        assertEq(uint256(refunded.escrowAmount), 0, "escrow not zeroed by _refund");
+        assertEq(uint8(refunded.phase), uint8(LotPhase.Refunded), "phase not Refunded");
 
         // Void the session so the withdrawRefund session-voided gate passes; with free/committed == 0 the
         // winner-escrow leg is the only contributor and finds escrow spent.
@@ -1584,11 +1584,11 @@ contract EscrowFundsTest is HammerBase {
         a.withdrawRefund(LOT_ID);
 
         // No second escrow exit fired against the already-spent slot.
-        assertEq(address(a).balance, contractBalBefore, "C-08b2: a second escrow exit paid out");
+        assertEq(address(a).balance, contractBalBefore, "a second escrow exit paid out");
         // Touch-nothing: the reverted withdrawRefund left free and committed at 0 and credited nothing to
         // pending (fail-closed at the slot level, not just net).
-        assertEq(a.withdrawableFree(LOT_ID, bidder1), 0, "C-08b2: free moved on the reverted withdrawRefund");
-        assertEq(a.pendingWithdrawal(bidder1), 0, "C-08b2: pending credited on the reverted withdrawRefund");
+        assertEq(a.withdrawableFree(LOT_ID, bidder1), 0, "free moved on the reverted withdrawRefund");
+        assertEq(a.pendingWithdrawal(bidder1), 0, "pending credited on the reverted withdrawRefund");
     }
 
     // Reentrancy backbone: withdrawDeposit and claimPending are nonReentrant, the native-push attack
